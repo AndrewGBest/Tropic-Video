@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tropic Video fixture: generic streaming home</title>
+<!-- A made-up streaming layout for testing. It imitates no real service and uses no real artwork or titles. -->
+<style>
+  body { margin: 0; background: #111; color: #eee; font: 16px system-ui, sans-serif; }
+  nav { display: flex; gap: 16px; padding: 16px 32px; }
+  nav a, .card, button { color: #eee; background: #2a2a2a; border: 0; border-radius: 8px; text-decoration: none; }
+  nav a { padding: 10px 18px; }
+  h2 { margin: 24px 32px 8px; font-size: 18px; }
+  .row { display: flex; gap: 16px; padding: 0 32px; }
+  .card { display: block; width: 200px; height: 112px; flex: none; }
+  .offer { margin: 24px 32px; display: flex; gap: 16px; }
+  .offer button { padding: 12px 20px; font-size: 16px; }
+  #log { margin: 24px 32px; white-space: pre; font: 13px monospace; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="#home" id="nav-home">Home</a>
+  <a href="#store" id="nav-store">Store</a>
+  <input type="search" id="search" aria-label="Search" placeholder="Search">
+</nav>
+<h2>Continue watching</h2>
+<div class="row" id="row1">
+  <a class="card" href="#t1" id="t1" aria-label="Fixture title one"></a>
+  <a class="card" href="#t2" id="t2" aria-label="Fixture title two"></a>
+  <a class="card" href="#t3" id="t3" aria-label="Fixture title three"></a>
+</div>
+<h2>Recommended</h2>
+<div class="row" id="row2">
+  <a class="card" href="#u1" id="u1" aria-label="Fixture title four"></a>
+  <a class="card" href="#u2" id="u2" aria-label="Fixture title five"></a>
+</div>
+<div class="offer">
+  <button id="play">Play</button>
+  <button id="rent">Rent HD $4.99</button>
+</div>
+<div id="log"></div>
+<script>
+  // Records what the page itself received, so tests can tell a blocked click from a delivered one.
+  window.__clicks = [];
+  document.addEventListener('click', (e) => {
+    const id = e.target.closest('[id]')?.id;
+    if (id) window.__clicks.push(id);
+    document.getElementById('log').textContent = window.__clicks.join(' ');
+    if (e.target.closest('a')) e.preventDefault();
+  });
+</script>
+</body>
+</html>

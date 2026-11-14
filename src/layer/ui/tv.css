@@ -1,0 +1,26 @@
+/*
+ * Tropic Video TV stylesheet. Inserted by the main process as user-origin CSS.
+ * Site-agnostic only: nothing in here may reference the streaming site's own
+ * class names. Site-specific rules belong in a user style or the adapter.
+ */
+
+/* The focus ring is drawn by the overlay; suppress the site's own outline so there is one indicator. */
+[data-tropic-focus] {
+  outline: none !important;
+}
+
+/* Remote and controller users have no pointer. */
+html.tropic-no-pointer,
+html.tropic-no-pointer * {
+  cursor: none !important;
+}
+
+/* Keep scrolled-to items clear of TV overscan. */
+html {
+  scroll-padding: 8vh 5vw;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

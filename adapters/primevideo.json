@@ -1,0 +1,13 @@
+{
+  "id": "primevideo",
+  "schema": 1,
+  "revision": 0,
+  "verified": false,
+  "note": "No selector in this file may be added without a diagnostics outline from the live site that shows it. Empty means the generic heuristics are in use.",
+  "selectors": {
+    "extraFocusable": [],
+    "searchInput": [],
+    "playerClose": [],
+    "purchaseControls": []
+  }
+}

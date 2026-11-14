@@ -1,0 +1,64 @@
+{
+  "name": "tropic-video",
+  "version": "0.0.1",
+  "description": "Unofficial TV-style front end for watching Prime Video on Linux HTPCs",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run test && npm run build && node scripts/check-rules.mjs",
+    "start": "npm run build && electron . --dev",
+    "spike": "npm run build && electron . --spike",
+    "e2e": "npm run build && node test/e2e/fixture-smoke.mjs",
+    "dist": "npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "io.github.andrewgbest.TropicVideo",
+    "productName": "Tropic Video",
+    "artifactName": "TropicVideo-${arch}.${ext}",
+    "electronDownload": {
+      "mirror": "https://github.com/castlabs/electron-releases/releases/download/"
+    },
+    "files": [
+      "dist/**",
+      "adapters/**",
+      "assets/**",
+      "package.json"
+    ],
+    "linux": {
+      "category": "AudioVideo",
+      "synopsis": "TV-style front end for a streaming site you already subscribe to",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "directories": {
+      "output": "release"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "electron": "github:castlabs/electron-releases#v44.10.1+wvcus",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "author": "Tropic Video contributors"
+}

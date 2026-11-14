@@ -1,0 +1,89 @@
+# Decision log
+
+Newest last. Each entry: date, decision, reason, and what would reopen it.
+
+## 2026-11-13: Wrap the website; do not run the service's TV bundle
+
+**Reason:** the service has no hosted TV web app to point at, and running its
+proprietary living-room bundle would mean redistributing or patching its code
+and presenting a false device identity. Wrapping the public site with an
+original layer avoids both. See `DESIGN.md` sections 2 to 4.
+**Reopen if:** the service publishes an official web TV experience.
+
+## 2026-11-13: TypeScript on castLabs Electron
+
+**Reason:** protected playback needs Chromium with Widevine; stock Electron
+has none and the castLabs build adds it, fetching the CDM at runtime so the
+project never redistributes it. The layer must be JavaScript regardless, so one
+language covers shell and layer. It is also the stack an AI agent can build and
+test most completely.
+**Reopen if:** the Phase 0 spike shows the service refuses playback in this
+shell. Fallback: launch the user's installed Chromium and inject the layer over
+the DevTools protocol. The layer code is shell-agnostic for this reason.
+
+## 2026-11-13: Layer runs in the preload's isolated world
+
+**Reason:** it needs the DOM but should neither be reachable by the site's
+scripts nor modify them. This also sidesteps the page's content security
+policy without rewriting response headers, which Hard rule 4 forbids.
+**Reopen if:** something needs main-world access. Prefer finding another way.
+
+## 2026-11-13: Honest Chromium user agent
+
+**Reason:** there is no TV endpoint to unlock, so nothing is gained by posing
+as a device, and doing so is where legal risk begins. Only the Electron and app
+tokens are removed, which leaves the true engine, version and OS.
+**Reopen if:** never for device spoofing. If the site rejects the shell for
+lacking a brand token, discuss before changing anything.
+
+## 2026-11-13: GitHub Releases, not Flathub
+
+**Reason:** the app is written with AI assistance, and Flathub's 2026 policy
+does not accept applications containing AI-generated or AI-assisted code.
+Distribution is AppImage, tarball and a Flatpak bundle file on GitHub Releases.
+**Reopen if:** Flathub's policy changes.
+
+## 2026-11-13: No ad blocking, ever
+
+**Reason:** Hard rule 4. It is the single feature most likely to turn a
+tolerated front end into a target.
+**Reopen if:** never.
+
+## 2026-11-13: Purchase guard only in automation mode
+
+**Reason:** real users may want to rent or buy from the couch; scripted and
+agent-driven runs must never be able to. The guard errs toward blocking and
+will over-block some harmless controls in automation, which is acceptable.
+**Reopen if:** users ask for a "kids/guest lock" (then offer it as a setting).
+
+## 2026-11-13: No end-to-end test framework dependency
+
+**Reason:** the harness speaks the DevTools protocol directly with Node's
+built-in WebSocket and fetch, so it runs anywhere the app runs and adds nothing
+to install.
+**Reopen if:** the harness grows past what is comfortable to maintain by hand.
+
+## 2026-11-13: Project name is "Tropic Video"
+
+**Reason:** Andrew's choice. It hints at the Amazon rainforest without using
+any of the service's marks, and is easy to say, spell and type. "Canopy Video"
+was rejected first: Kanopy is a registered mark for a video streaming service
+and sounds identical. A web search and third-party trademark sites showed no
+"Tropic Video" in streaming and no TROPIC mark for video streaming or media
+software. Neighbours noted: Tropic (procurement software), Tropic Skincare
+(US registration that includes the entertainment class), Tropico TV (a
+Brazilian IPTV app), Topic (a streaming service one letter away).
+**Not done:** a direct search of the USPTO, CIPO, EUIPO or UK registers.
+**Reopen:** before promoting the project publicly, run those searches or have
+a lawyer do a clearance. The working name before this was "Couchstream".
+
+## 2026-11-13: Licence is GPL-3.0
+
+**Reason:** Andrew's choice, so that anyone distributing a modified version
+must publish their source under the same terms. The first local commits used
+MIT; nothing was published under it. The `LICENSE` file is the one GitHub
+generated when the repository was created. `package.json` says
+`GPL-3.0-only`; whether to allow "or any later version" was not discussed.
+**Note:** the licence covers the code, not the name. The README asks forks to
+use a different name.
+**Reopen if:** Andrew wants "or later", or a contributor needs a different licence.
