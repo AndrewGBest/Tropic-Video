@@ -64,7 +64,7 @@ how in `STATUS.md`.
 
 ## Phase 5: upkeep
 
-- [ ] Live-site smoke test an agent can run on the VM
+- [x] Live-site walk an agent can run on the VM (`npm run live:walk`, see `VM-SETUP.md`)
 - [ ] Remote coverage checklist: every page type and control walked with a D-pad, gaps listed in `STATUS.md`
 - [ ] Issue template for "the site changed" reports with an outline attached
 - [ ] Contributor guide

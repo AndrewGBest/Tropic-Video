@@ -14,7 +14,8 @@
     "start": "npm run build && electron . --dev",
     "spike": "npm run build && electron . --spike",
     "e2e": "npm run build && node test/e2e/fixture-smoke.mjs",
-    "dist": "npm run build && electron-builder --linux"
+    "dist": "npm run build && electron-builder --linux",
+    "live:walk": "node test/live/walk.mjs"
   },
   "build": {
     "appId": "io.github.andrewgbest.TropicVideo",

@@ -62,6 +62,22 @@ the video element's `paused` and `currentTime` instead.
 The signed-in profile lives in the app's user data folder and persists between
 runs. Never copy it, commit it or print its contents.
 
+## Walking a page with the remote
+
+To check that a page works from a remote, start the app as above and run:
+
+```
+npm run live:walk -- ArrowDown 20
+```
+
+It presses the key that many times and prints where the focus ring went
+after each press (tag, test id, position, scroll position; no titles or
+text). Look for `NONE` (focus lost), `OFFSCREEN` (ring not visible), an early
+stop (a trap) or a jump in the scroll position that skips part of the page.
+Navigate to the page of interest first, walk it in all four directions, and
+record what you find in `STATUS.md`. Session 2's findings came from exactly
+this.
+
 ## Capturing page outlines for the adapter
 
 1. Navigate to the page of interest (home, a title's detail page, search, the
