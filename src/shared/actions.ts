@@ -24,7 +24,7 @@ export type BridgeMessage =
 
 export type SpikeEvent =
   | { name: 'eme-access'; ok: boolean; detail: string }
-  | { name: 'video'; event: string; width: number; height: number; currentTime: number }
+  | { name: 'video'; event: string; width: number; height: number; currentTime: number; protected: boolean }
   | { name: 'video-error'; code: number; message: string };
 
 export interface LayerOptions {

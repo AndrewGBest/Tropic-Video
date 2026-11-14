@@ -3,7 +3,8 @@
 // element does. They never inspect licence traffic or keys.
 import type { BridgeMessage } from '../shared/actions';
 
-const VIDEO_EVENTS = ['loadedmetadata', 'playing', 'waiting', 'stalled', 'pause', 'ended', 'encrypted'] as const;
+const VIDEO_EVENTS = ['loadedmetadata', 'playing', 'waiting', 'stalled', 'pause', 'ended', 'encrypted', 'timeupdate'] as const;
+const TIME_SAMPLE_MS = 10_000;
 
 export function installSpikeProbes(doc: Document, send: (m: BridgeMessage) => void): () => void {
   const view = doc.defaultView;
@@ -27,12 +28,29 @@ export function installSpikeProbes(doc: Document, send: (m: BridgeMessage) => vo
     send({ kind: 'spike', event: { name: 'eme-access', ok: false, detail: 'EME API missing' } });
   }
 
+  // `timeupdate` fires several times a second; one sample every ten seconds
+  // per element is enough to show that playback is advancing.
+  const lastSample = new WeakMap<HTMLVideoElement, number>();
   const onVideo = (e: Event): void => {
     const v = e.target;
     if (!(v instanceof HTMLVideoElement)) return;
+    if (e.type === 'timeupdate') {
+      const now = Date.now();
+      if (now - (lastSample.get(v) ?? 0) < TIME_SAMPLE_MS) return;
+      lastSample.set(v, now);
+    }
     send({
       kind: 'spike',
-      event: { name: 'video', event: e.type, width: v.videoWidth, height: v.videoHeight, currentTime: Math.round(v.currentTime) },
+      event: {
+        name: 'video',
+        event: e.type,
+        width: v.videoWidth,
+        height: v.videoHeight,
+        currentTime: Math.round(v.currentTime),
+        // Whether the page attached MediaKeys to this element, i.e. whether
+        // this is protected playback rather than a clear trailer. Presence only.
+        protected: v.mediaKeys !== null,
+      },
     });
   };
   const onError = (e: Event): void => {
