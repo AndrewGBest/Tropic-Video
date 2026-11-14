@@ -9,6 +9,14 @@
   outline: none !important;
 }
 
+/* The focused card grows a little, as on a TV. Site-agnostic: it applies to whatever element has focus. */
+[data-tropic-zoom] {
+  transform: scale(1.08) !important;
+  transition: transform 0.12s ease-out !important;
+  position: relative;
+  z-index: 3;
+}
+
 /* Remote and controller users have no pointer. */
 html.tropic-no-pointer,
 html.tropic-no-pointer * {

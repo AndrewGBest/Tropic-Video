@@ -17,6 +17,32 @@ const FOCUSABLE = [
 ].join(',');
 
 export const FOCUS_ATTR = 'data-tropic-focus';
+/** Set on a focused element small enough to grow, as focused cards do on a TV. */
+export const ZOOM_ATTR = 'data-tropic-zoom';
+
+/** A focused card grows; a banner, a text field or a slider does not. */
+export function shouldZoom(el: Element, view: Window): boolean {
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return false;
+  const r = el.getBoundingClientRect();
+  const viewport = view.innerWidth * view.innerHeight;
+  return viewport > 0 && (r.width * r.height) / viewport <= 0.2;
+}
+
+/**
+ * The element to grow for a focused control: the outermost ancestor that
+ * occupies the same box. On the live site a card's link is a transparent
+ * layer over its picture, so growing the link alone left the picture behind.
+ */
+export function zoomTarget(el: Element): Element {
+  const box = el.getBoundingClientRect();
+  const same = (r: DOMRect): boolean =>
+    Math.abs(r.left - box.left) <= 6 && Math.abs(r.top - box.top) <= 6 && Math.abs(r.right - box.right) <= 6 && Math.abs(r.bottom - box.bottom) <= 6;
+  let target = el;
+  for (let node = el.parentElement, i = 0; node && i < 6 && same(node.getBoundingClientRect()); node = node.parentElement, i++) {
+    target = node;
+  }
+  return target;
+}
 
 export interface NavigatorOptions {
   /** Extra selectors from the site adapter. */
@@ -99,6 +125,7 @@ function toRect(el: Element): Rect {
 
 export class SpatialNavigator {
   private current: Element | null = null;
+  private zoomed: Element | null = null;
   /** Where focus last was in each sideways-scrolling row. */
   private readonly rowMemory = new WeakMap<Element, Element>();
 
@@ -201,11 +228,17 @@ export class SpatialNavigator {
   focus(el: Element | null): boolean {
     if (!el) return false;
     this.current?.removeAttribute(FOCUS_ATTR);
+    this.zoomed?.removeAttribute(ZOOM_ATTR);
+    this.zoomed = null;
     this.current = el;
     const view = this.doc.defaultView;
     const row = view ? rowOf(el, view) : null;
     if (row) this.rowMemory.set(row, el);
     el.setAttribute(FOCUS_ATTR, '');
+    if (view && shouldZoom(el, view)) {
+      this.zoomed = zoomTarget(el);
+      this.zoomed.setAttribute(ZOOM_ATTR, '');
+    }
     if (el instanceof HTMLElement || 'focus' in el) {
       (el as HTMLElement).focus({ preventScroll: true });
     }
@@ -223,6 +256,8 @@ export class SpatialNavigator {
 
   clear(): void {
     this.current?.removeAttribute(FOCUS_ATTR);
+    this.zoomed?.removeAttribute(ZOOM_ATTR);
+    this.zoomed = null;
     this.current = null;
     this.opts.onFocusChange?.(null);
   }

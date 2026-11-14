@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { edgeControl, FOCUS_ATTR, SpatialNavigator } from '../src/layer/spatial/navigator';
+import { edgeControl, FOCUS_ATTR, SpatialNavigator, ZOOM_ATTR } from '../src/layer/spatial/navigator';
 
 // jsdom has no layout engine, so each element's rectangle is read from data-rect="left,top,width,height".
 function installLayout(): void {
@@ -205,5 +205,45 @@ describe('carousels', () => {
     const nav = new SpatialNavigator(document, { skip: ['.arrow'] });
     nav.focusFirstIn(document.getElementById('hero')!);
     expect(nav.focused?.id).toBe('s2');
+  });
+});
+
+describe('focus zoom', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'innerWidth', { value: 960, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 540, configurable: true });
+    document.body.innerHTML =
+      card('small', 0, 0) +
+      '<a href="#" id="banner" data-rect="0,100,960,300">x</a>' +
+      '<input id="field" type="search" data-rect="0,420,200,40">';
+  });
+
+  it('marks a focused card and unmarks it when focus moves on or is cleared', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('small'));
+    expect(document.getElementById('small')!.hasAttribute(ZOOM_ATTR)).toBe(true);
+    nav.focus(document.getElementById('banner'));
+    expect(document.querySelectorAll(`[${ZOOM_ATTR}]`)).toHaveLength(0);
+    nav.focus(document.getElementById('small'));
+    nav.clear();
+    expect(document.querySelectorAll(`[${ZOOM_ATTR}]`)).toHaveLength(0);
+  });
+
+  it('grows the whole card when the focused link is a layer over it', () => {
+    document.body.innerHTML = '<section data-rect="0,0,960,200"><article id="cardbox" data-rect="10,10,200,113"><img data-rect="10,10,200,113"><a href="#" id="layer" data-rect="10,10,200,113">x</a></article></section>';
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('layer'));
+    expect(document.getElementById('cardbox')!.hasAttribute(ZOOM_ATTR)).toBe(true);
+    expect(document.querySelectorAll(`[${ZOOM_ATTR}]`)).toHaveLength(1);
+    nav.clear();
+    expect(document.querySelectorAll(`[${ZOOM_ATTR}]`)).toHaveLength(0);
+  });
+
+  it('does not grow banners or text fields', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('banner'));
+    expect(document.getElementById('banner')!.hasAttribute(ZOOM_ATTR)).toBe(false);
+    nav.focus(document.getElementById('field'));
+    expect(document.getElementById('field')!.hasAttribute(ZOOM_ATTR)).toBe(false);
   });
 });

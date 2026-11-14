@@ -43,6 +43,10 @@ Update this at the end of every working session.
   ignores controls inside a transparent ancestor and backdrop links stretched
   behind other controls.
 
+- Hard rule 6 changed by Andrew: the service's TV layout may be used as a
+  reference; no assets or marks (see `DECISIONS.md` and `DESIGN.md` 6a).
+- Focus zoom: the focused card grows by 8%, picture and all, as on a TV.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -69,6 +73,7 @@ Update this at the end of every working session.
 | The AppImage builds and runs | `npm run dist`, then launched with a throwaway profile under `--spike --automation`: Widevine component fetched at run time, notice page shown; the unpacked build contains no CDM |
 | CI runs on GitHub | `gh run list`: check and e2e green on each push to `main` |
 | Left/right change slide in the home page's top carousel | run on the live site: right from the last button showed the next slide with focus on its play button (screenshot looked at) |
+| The focused card grows with its picture | live home page at the 960x540 canvas, screenshot looked at |
 
 ### Still not verified after session 2
 
