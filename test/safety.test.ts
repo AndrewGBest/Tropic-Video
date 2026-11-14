@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { installPurchaseGuard, isSpendControl, looksLikeSpendUrl } from '../src/layer/guard/purchase-guard';
-import { buildOutline, sanitizeUrl } from '../src/layer/diagnostics/outline';
+import { buildOutline, maskIdentifier, sanitizeUrl } from '../src/layer/diagnostics/outline';
 import { parseAdapter } from '../src/layer/adapter/adapter';
 import { browserUserAgent, isAllowedUrl } from '../src/main/hosts';
 
@@ -62,6 +62,40 @@ describe('purchase guard', () => {
     expect(looksLikeSpendUrl('https://www.example.com/gp/buy/thing')).toBe(true);
     expect(looksLikeSpendUrl('https://www.example.com/detail/123')).toBe(false);
     expect(looksLikeSpendUrl('http://[bad')).toBe(true);
+  });
+});
+
+describe('identifier masking', () => {
+  it('keeps ordinary structural identifiers', () => {
+    for (const id of ['card', 'pv-nav-home', 'dp-atf-play-button', 'thumbUpOutlined', 'DVWebNode-detail-wrapper', 'ep-title-episode-3']) {
+      expect(maskIdentifier(id)).toBe(id);
+    }
+  });
+
+  // Found on the live site: a test id of the form active-profile-<profile name>.
+  it.each([
+    ['active-profile-Jane Doe', 'active-profile-:text'],
+    ['active-profile-jane', 'active-profile-:text'],
+    ['profile-avatar', 'profile-:text'],
+    ['nav-merch-BlackVoices', 'nav-merch-:text'],
+    ['greeting Jane', ':text'],
+    ['Jane Doe', ':text'],
+    ['user_jdoe', 'user-:text'],
+  ])('masks %s', (input, expected) => {
+    expect(maskIdentifier(input)).toBe(expected);
+  });
+
+  it('still masks id-like tokens', () => {
+    expect(maskIdentifier('0ABCD12345XYZ')).toBe(':id');
+    expect(maskIdentifier('card-0ABCD12345XYZ Jane')).toBe(':text');
+  });
+
+  it('is applied to ids and test ids in the outline', () => {
+    const out = buildOutline(
+      html('<div id="active-profile-Jane" data-testid="active-profile-Jane Doe" data-automation-id="account-jdoe"></div>'),
+    );
+    expect(out).not.toMatch(/Jane|Doe|jdoe/);
+    expect(out).toContain('[data-testid="active-profile-:text"]');
   });
 });
 

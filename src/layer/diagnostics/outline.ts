@@ -47,6 +47,42 @@ function maskToken(token: string): string {
   return token;
 }
 
+/** Attributes that hold a single identifier. Seen on the live site: an identifier can embed a profile name. */
+const IDENTIFIERS = new Set(['data-testid', 'data-test-id', 'data-automation-id']);
+
+/** Identifier segments after which the rest is likely to be about a person. */
+const PERSONAL = /^(profile|profiles|user|username|account|customer|name|email)$/i;
+
+/**
+ * Masks an identifier such as a test id. Identifiers are one token made of
+ * lower-case segments; anything that looks like embedded free text (a space,
+ * a capitalised later segment, whatever follows "profile") is replaced by
+ * `:text`. Over-masking is fine; leaking a name is not.
+ */
+export function maskIdentifier(value: string): string {
+  const trimmed = value.trim();
+  const first = trimmed.split(/\s+/)[0] ?? '';
+  const hadSpace = first.length !== trimmed.length;
+  const segments = first.split(/([-_:.])/); // keeps separators at odd indices
+  const kept: string[] = [];
+  let cut = false;
+  for (let i = 0; i < segments.length; i += 2) {
+    const seg = segments[i] ?? '';
+    if (i > 0 && /^[A-Z]/.test(seg)) {
+      cut = true;
+      break;
+    }
+    kept.push(seg, segments[i + 1] ?? '');
+    if (PERSONAL.test(seg) && i + 2 < segments.length) {
+      cut = true;
+      break;
+    }
+  }
+  if (!cut) return hadSpace ? ':text' : maskToken(first); // free text with spaces is not an identifier at all
+  const head = kept.join('').replace(/[-_:.]$/, '');
+  return head && maskToken(head) === head ? `${head}-:text` : ':text';
+}
+
 function maskList(value: string): string {
   return value
     .split(/\s+/)
@@ -58,12 +94,14 @@ function maskList(value: string): string {
 
 function describe(el: Element): string {
   const parts: string[] = [el.tagName.toLowerCase()];
-  if (el.id) parts.push(`#${maskToken(el.id)}`);
+  if (el.id) parts.push(`#${maskIdentifier(el.id)}`);
   const cls = el.getAttribute('class');
   if (cls) parts.push(`.${maskList(cls).replace(/ /g, '.')}`);
   for (const attr of el.attributes) {
     const name = attr.name.toLowerCase();
-    if (VERBATIM.has(name)) {
+    if (IDENTIFIERS.has(name)) {
+      parts.push(`[${name}="${maskIdentifier(attr.value)}"]`);
+    } else if (VERBATIM.has(name)) {
       parts.push(`[${name}="${maskList(attr.value)}"]`);
     } else if (REDACTED.has(name)) {
       parts.push(`[${name}:${attr.value.length}]`);
