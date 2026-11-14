@@ -264,3 +264,32 @@ describe('scrolling to the focused control', () => {
     expect(calls).toEqual(['top:0', 'lower:center']);
   });
 });
+
+describe('styled radios and checkboxes', () => {
+  // Shape seen in the live site's player menus: an invisible input inside a visible label.
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <label id="optA" data-rect="600,100,240,32"><input type="radio" name="s" id="rA" style="opacity: 0" data-rect="600,108,13,13"><div>x</div></label>
+      <label id="optB" data-rect="600,140,240,32"><input type="radio" name="s" id="rB" style="opacity: 0" data-rect="600,148,13,13"><div>x</div></label>
+      <label id="plain" data-rect="600,180,240,32"><input type="checkbox" id="visibleBox" data-rect="600,188,13,13"> x</label>
+      <label id="textLabel" data-rect="600,220,240,32">not a control</label>`;
+  });
+
+  it('focuses the label when its input is invisible, and the input when it is not', () => {
+    const nav = new SpatialNavigator(document);
+    expect(ids(nav.candidates())).toEqual(['optA', 'optB', 'visibleBox']);
+  });
+
+  it('selects the option when its label is activated', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('optB'));
+    nav.activate();
+    expect((document.getElementById('rB') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('can pick up focus nearest to a point', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focusNearest({ x: 700, y: 150 });
+    expect(nav.focused?.id).toBe('optB');
+  });
+});

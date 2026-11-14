@@ -14,6 +14,11 @@ const FOCUSABLE = [
   '[role="menuitem"]',
   '[role="option"]',
   '[tabindex]:not([tabindex="-1"])',
+  // A styled radio or checkbox: the real input is invisible inside its label,
+  // so the label is the thing to focus and click. (When the input is visible
+  // it wins, because wrappers of another candidate are dropped.)
+  'label:has(input[type="radio"])',
+  'label:has(input[type="checkbox"])',
 ].join(',');
 
 export const FOCUS_ATTR = 'data-tropic-focus';
@@ -172,6 +177,21 @@ export class SpatialNavigator {
       }
     });
     return valid.length ? valid.join(',') : null;
+  }
+
+  /** Focuses the candidate whose centre is nearest to a point, for picking up where a vanished control was. */
+  focusNearest(point: { x: number; y: number }): boolean {
+    let best: Element | null = null;
+    let bestDistance = Infinity;
+    for (const el of this.candidates()) {
+      const r = el.getBoundingClientRect();
+      const d = Math.hypot((r.left + r.right) / 2 - point.x, (r.top + r.bottom) / 2 - point.y);
+      if (d < bestDistance) {
+        best = el;
+        bestDistance = d;
+      }
+    }
+    return this.focus(best);
   }
 
   /** Focuses the first candidate inside `container`, reading order. */

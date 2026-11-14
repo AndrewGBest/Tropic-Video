@@ -49,6 +49,11 @@ Update this at the end of every working session.
 - Focus on the first screenful (bar and banner) shows the page from the very
   top, so the banner is never half under the bar. Checked on the live site.
 
+- Player controls stay up while focus is on one (a pointer nudge every
+  second, for up to 20 seconds without a key). Styled radio and checkbox
+  options take focus through their label, so the subtitles list is usable.
+  Back with a menu open closes the menu first, then the player.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -76,6 +81,9 @@ Update this at the end of every working session.
 | CI runs on GitHub | `gh run list`: check and e2e green on each push to `main` |
 | Left/right change slide in the home page's top carousel | run on the live site: right from the last button showed the next slide with focus on its play button (screenshot looked at) |
 | The focused card grows with its picture | live home page at the 960x540 canvas, screenshot looked at |
+| Subtitles from the remote | live site: the subtitles button toggles them; more, then Subtitles, opens the language list and each option takes focus (no option was changed) |
+| Controls stay up while focused, then let go | live site: focus held through 10 s of sampling; gone after 20 s without a key |
+| Back with a player menu open | live site: first Back leaves the controls, second closes the menu, third closes the player and stays on the title page |
 
 ### Still not verified after session 2
 
@@ -93,11 +101,12 @@ Update this at the end of every working session.
 
 ### Found, not fixed
 
-- The player's controls hide about five seconds after the last key, and focus
-  is then dropped; the next up/down starts again from the middle.
+- During an advertisement the player's more menu does not open, and the
+  reveal of controls was unreliable around the switch from advertisement to
+  programme (seen once; eight of eight later).
 - Up from the player's bottom row lands on the volume slider, not the button.
   The seek bar itself is not reachable (left/right seek instead).
-- Menus opened from player controls (subtitles, audio) have not been walked.
+- The audio menu and subtitle settings have not been walked (subtitles have).
 - `sendInputEvent` needs the window to have focus. Fine on a TV; a desktop
   window in the background would ignore gamepad play/pause.
 - Gamepad play/pause and seek are untested with a physical controller.
@@ -109,7 +118,7 @@ Update this at the end of every working session.
 
 ### Next actions (replaces the list at the bottom)
 
-1. Walk the player's subtitle and audio menus; next-episode and skip prompts.
+1. Next-episode and skip prompts in the player; the audio menu.
 2. Profile picker and sign-in pages with a remote.
 3. First release: Andrew signs in to the packaged build and tags a version.
 

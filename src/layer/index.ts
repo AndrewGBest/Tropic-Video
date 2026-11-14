@@ -85,7 +85,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
    */
   const onPlayerControl = (): boolean => {
     const f = nav.focused;
-    if (!f) return false;
+    // Outside the player this must answer without touching focus: it is also
+    // asked by timers, and clearing here would drop focus on a browse page.
+    if (!f || !inPlayer()) return false;
     if (scope()?.contains(f) && isVisible(f, view)) return true;
     nav.clear();
     return false;
@@ -116,7 +118,17 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     ignorePointerUntil = Date.now() + 500;
     send({ kind: 'revealControls' });
   };
+  // The site hides its controls soon after the pointer stops (under two
+  // seconds on the live site; a movement every second holds them). While the
+  // user is on one, keep them up, so focus does not vanish mid-thought; give
+  // up after a while without a key so the picture is not covered forever.
+  const CONTROLS_LINGER_MS = 20_000;
+  let lastControlKeyAt = 0;
+  const keepAlive = view.setInterval(() => {
+    if (Date.now() - lastControlKeyAt < CONTROLS_LINGER_MS && onPlayerControl()) revealControls();
+  }, 1000);
   const moveInPlayer = (dir: Direction): void => {
+    lastControlKeyAt = Date.now();
     revealControls();
     if (onPlayerControl()) {
       nav.move(dir);
@@ -131,8 +143,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     }, 100);
   };
 
-  let closeTimer: number | undefined;
+  let refocusTimer: number | undefined;
   let lastCloseAt = 0;
+  let backStreak = 0;
   const back = (): void => {
     const active = doc.activeElement;
     if (isTextEntry(active)) {
@@ -150,22 +163,19 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
         (close as HTMLElement).click();
         return;
       }
-      // Ask the site's player to close itself. History is the fallback, used
-      // only when the picture is plainly still running a while later, or when
-      // Back is pressed again: a closing player can linger for a moment, and
-      // going back then would leave the title page as well.
-      const again = Date.now() - lastCloseAt < 5000;
+      // Ask the site's player with its own Escape key. With a menu open the
+      // first Escape closes the menu and the next one the player, so history
+      // is only the last resort: the third Back in a row that leaves the
+      // player still open. Nothing is done on a timer; a closing player can
+      // linger for a moment, and going back then would lose the title page.
+      backStreak = Date.now() - lastCloseAt < 4000 ? backStreak + 1 : 1;
       lastCloseAt = Date.now();
-      view.clearTimeout(closeTimer);
-      if (again) {
+      if (backStreak >= 3) {
+        backStreak = 0;
         if (view.history.length > 1) view.history.back();
         return;
       }
       pressPlayerKey('close');
-      closeTimer = view.setTimeout(() => {
-        const v = findMainVideo(doc, playerRoots);
-        if (v && !v.paused && view.history.length > 1) view.history.back();
-      }, 2500);
       return;
     }
     if (view.history.length > 1) view.history.back();
@@ -210,9 +220,24 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
         if (inPlayer()) moveInPlayer(a.dir);
         else moveInPage(a.dir);
         break;
-      case 'select':
-        if (!nav.activate()) nav.move('down');
+      case 'select': {
+        lastControlKeyAt = Date.now();
+        const target = nav.focused;
+        const box = target?.getBoundingClientRect();
+        if (!nav.activate()) {
+          nav.move('down');
+          break;
+        }
+        // Activating a player control can replace it (a menu opens, a list
+        // changes). Pick focus up again next to where it was.
+        if (box && inPlayer()) {
+          view.clearTimeout(refocusTimer);
+          refocusTimer = view.setTimeout(() => {
+            if (inPlayer() && !onPlayerControl()) nav.focusNearest({ x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 });
+          }, 500);
+        }
         break;
+      }
       case 'back':
         back();
         break;
@@ -296,7 +321,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       view.clearInterval(playbackTimer);
       view.clearInterval(searchPoll);
       view.clearInterval(controlsTimer);
-      view.clearTimeout(closeTimer);
+      view.clearInterval(keepAlive);
+      view.clearTimeout(refocusTimer);
       view.clearTimeout(edgeTimer);
       stopPads();
       stopGuard();
