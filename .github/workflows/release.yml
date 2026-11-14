@@ -1,4 +1,5 @@
-# Untested until the first tag is pushed. See docs/STATUS.md.
+# The build steps are the same as build.yml, which has run. Creating the draft
+# release is untested until the first tag is pushed. See docs/STATUS.md.
 name: Release
 
 on:
@@ -21,7 +22,15 @@ jobs:
       - run: npm run check
       - run: xvfb-run -a npm run e2e
       - run: npx electron-builder --linux --publish never
+      - name: Install Flatpak tooling and runtimes
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder elfutils
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 org.electronjs.Electron2.BaseApp//25.08
+      - name: Build the Flatpak bundle
+        run: npx electron-builder --linux flatpak --publish never
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/*.AppImage release/*.tar.gz --draft --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" release/*.AppImage release/*.tar.gz release/*.flatpak --draft --generate-notes

@@ -98,6 +98,10 @@ Update this at the end of every working session.
   automatic retry (5 s, 10 s, ... up to every 30 s).
 - Common remote buttons mapped by default (Back, Stop, Search, Menu, Info).
 
+- Flatpak bundle built by the "Build packages" workflow (runtime 25.08), with
+  permissions limited to network, display, sound, input devices and the
+  screensaver, power and media-player bus names.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -143,6 +147,7 @@ Update this at the end of every working session.
 | Media keys and desktop media widgets (MPRIS) | live site: Chromium registered an MPRIS player while a title played (status Playing, can pause, can seek); its PlayPause paused and resumed the picture. No code of ours is involved |
 | Sleep is held off during playback and released when paused | live site on KDE Wayland: the session's inhibition list had three entries from the app while playing (two from Chromium, one from `powerSaveBlocker`), none while paused or browsing, three again on resume |
 | Unreachable service shows a notice and recovers | e2e: start page on a closed port showed the notice; when a server appeared on that port the page loaded by itself |
+| The Flatpak bundle builds and runs | built in CI; the artifact was downloaded, installed for one user, and launched under `--spike --automation`: Widevine component fetched inside the sandbox, notice page shown. Removed again afterwards |
 
 ### Still not verified after session 2
 
@@ -157,8 +162,10 @@ Update this at the end of every working session.
   which blocks the signed-out landing page, so only Andrew can try these.
 - Switching profile.
 
-- The packaged build signed in and playing (it uses a different profile folder
-  from the dev build, so Andrew would need to sign in to it once).
+- The packaged builds signed in and playing. The AppImage uses the same data
+  folder as the dev build (`~/.config/tropic-video`), so it should already be
+  signed in on this VM (not tried); an earlier note here said otherwise and was
+  wrong. The Flatpak has its own folder and needs one sign-in.
 - The release workflow's last step (creating the draft release on a tag). Its
   build steps are the same as the "Build packages" workflow, which passes.
   Also the tarball, and how the icon looks in a desktop launcher.

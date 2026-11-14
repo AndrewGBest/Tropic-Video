@@ -55,7 +55,7 @@ how in `STATUS.md`.
 ## Phase 4: packaging and release
 
 - [x] AppImage build verified locally and in CI (tarball built, not run)
-- [ ] Flatpak bundle file attached to GitHub releases (not Flathub; see `DECISIONS.md`)
+- [x] Flatpak bundle built in CI and launched once (attaching it to a release waits for the first tag)
 - [ ] Release workflow on tag
 - [ ] README install guide, screenshots that show no third-party artwork
 - [x] Original icon

@@ -56,9 +56,15 @@ keyboard. The app never sees your password.
 
 ## Installing
 
-There is no published release yet. Until there is, build it yourself (below).
-A build made by the project's "Build packages" workflow can also be downloaded
-from the repository's Actions tab by anyone signed in to GitHub.
+There is no published release yet. Until there is, build it yourself (below),
+or download a build made by the project's "Build packages" workflow from the
+repository's Actions tab (you need to be signed in to GitHub). It contains an
+AppImage, a tarball and a Flatpak bundle.
+
+- **AppImage:** make it executable and run it.
+- **Flatpak bundle:** `flatpak install --user TropicVideo-x86_64.flatpak`,
+  with the Flathub remote set up so its runtime can be fetched. It can reach
+  the network, the display, sound and game controllers, and none of your files.
 
 The app downloads the Widevine component from Google the first time it runs;
 it is not included in the package. Playback needs that download to succeed.
@@ -87,7 +93,9 @@ npm run dist      # builds release/TropicVideo-x86_64.AppImage and a tarball
 ## Remapping keys
 
 Remotes send all sorts of keys. To map one, create `config.json` in the app's
-data folder (`~/.config/Tropic Video/` for the packaged app) and restart:
+data folder and restart. The folder is `~/.config/tropic-video/`, or
+`~/.var/app/io.github.andrewgbest.TropicVideo/config/tropic-video/` for the
+Flatpak:
 
 ```json
 {

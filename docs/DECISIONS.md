@@ -325,3 +325,19 @@ mapping cannot trap the user.
 **Not done:** gamepad button remapping; reloading the file without a restart.
 **Reopen if:** users who cannot edit a file need remapping; then a "press the
 key you want" flow, not a general settings screen.
+
+## 2026-11-14: Flatpak bundle permissions
+
+**Decision:** the bundle is built against the freedesktop 25.08 runtime with
+the Electron base app, and is allowed: network, Wayland and X11, sound, all
+devices, talking to the screensaver and power-management services, and owning
+the Chromium media-player bus name. It gets no access to the user's files.
+**Reason:** `--device=all` is the only Flatpak permission that lets the
+browser see game controllers; it is broader than wanted and is the one to
+revisit. Everything else is what playback, sleep inhibition and media keys
+need.
+**Checked:** the bundle starts, fetches the Widevine component inside the
+sandbox and loads the site. Playback, a controller, sleep inhibition and
+media keys inside the sandbox were not tried.
+**Reopen if:** Flatpak gains a narrower input-device permission that
+controllers work with.
