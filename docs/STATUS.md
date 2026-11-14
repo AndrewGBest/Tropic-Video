@@ -162,10 +162,12 @@ Update this at the end of every working session.
   which blocks the signed-out landing page, so only Andrew can try these.
 - Switching profile.
 
-- The packaged builds signed in and playing. The AppImage uses the same data
-  folder as the dev build (`~/.config/tropic-video`), so it should already be
-  signed in on this VM (not tried); an earlier note here said otherwise and was
-  wrong. The Flatpak has its own folder and needs one sign-in.
+- Playback in the packaged builds. The CI-built AppImage was launched with the
+  signed-in data folder it shares with the dev build (`~/.config/tropic-video`)
+  under `--spike --automation`: the home page loaded signed in at the TV scale
+  and the remote moved focus. Nothing was played in it. An earlier note here
+  said the folders differed and was wrong. The Flatpak has its own folder and
+  needs one sign-in.
 - The release workflow's last step (creating the draft release on a tag). Its
   build steps are the same as the "Build packages" workflow, which passes.
   Also the tarball, and how the icon looks in a desktop launcher.
