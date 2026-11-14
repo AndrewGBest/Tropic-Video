@@ -54,6 +54,10 @@ Update this at the end of every working session.
   options take focus through their label, so the subtitles list is usable.
   Back with a menu open closes the menu first, then the player.
 
+- Menus that open only on hover (the profile menu and the other navigation
+  bar dropdowns): Enter rests the pointer on the button when a click leaves it
+  collapsed; Back closes the menu and returns focus to the button.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -84,8 +88,13 @@ Update this at the end of every working session.
 | Subtitles from the remote | live site: the subtitles button toggles them; more, then Subtitles, opens the language list and each option takes focus (no option was changed) |
 | Controls stay up while focused, then let go | live site: focus held through 10 s of sampling; gone after 20 s without a key |
 | Back with a player menu open | live site: first Back leaves the controls, second closes the menu, third closes the player and stays on the title page |
+| The profile menu opens, is walkable and closes from the remote | live site: Enter expanded it, down moved through its entries, Back hid it. No profile was switched |
 
 ### Still not verified after session 2
+
+- Sign-in pages with a remote. An agent-driven run must use `--automation`,
+  which blocks the signed-out landing page, so only Andrew can try these.
+- Switching profile, and the other navigation dropdowns (same mechanism, not run).
 
 - The packaged build signed in and playing (it uses a different profile folder
   from the dev build, so Andrew would need to sign in to it once).
@@ -119,7 +128,7 @@ Update this at the end of every working session.
 ### Next actions (replaces the list at the bottom)
 
 1. Next-episode and skip prompts in the player; the audio menu.
-2. Profile picker and sign-in pages with a remote.
+2. Andrew: try signing in with only a remote or keyboard (signed-out pages cannot be driven by the agent).
 3. First release: Andrew signs in to the packaged build and tags a version.
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)

@@ -31,3 +31,21 @@ export function tvZoom(content: { width: number; height: number }, override?: st
   // relayout churn from tiny changes while a window is resized.
   return Math.floor(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, raw)) * 100 + 1e-6) / 100;
 }
+
+/**
+ * Converts a point the page side asked to hover (CSS pixels) into window
+ * pixels, or null when the request is not two finite numbers inside the window.
+ */
+export function hoverPoint(
+  request: { x?: unknown; y?: unknown },
+  zoom: number,
+  content: readonly number[] | undefined,
+): { x: number; y: number } | null {
+  const [width = 0, height = 0] = content ?? [];
+  if (typeof request.x !== 'number' || typeof request.y !== 'number') return null;
+  if (!Number.isFinite(request.x) || !Number.isFinite(request.y) || !Number.isFinite(zoom) || zoom <= 0) return null;
+  const x = Math.round(request.x * zoom);
+  const y = Math.round(request.y * zoom);
+  if (x < 0 || y < 0 || x >= width || y >= height) return null;
+  return { x, y };
+}

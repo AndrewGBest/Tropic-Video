@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import type { BridgeMessage, LayerOptions, SpikeEvent } from '../shared/actions';
 import { playerKeyInfo } from '../shared/player-keys';
 import { browserUserAgent, isAllowedUrl } from './hosts';
-import { tvZoom } from './zoom';
+import { hoverPoint, tvZoom } from './zoom';
 import { blockReason, blockedMessage, describeBlockedUrl, noticePageUrl } from './navigation';
 
 const HOME_URL = 'https://www.primevideo.com/';
@@ -191,6 +191,21 @@ function wireMessages(): void {
               wc.sendInputEvent({ type: 'mouseMove', x, y, globalX: x, globalY: y, movementX: nudge ? 20 : -20, movementY: 0 });
             }, i * 40);
           });
+        }
+        break;
+      }
+      case 'hover': {
+        // An ordinary pointer movement to a point the layer names. Page
+        // coordinates are CSS pixels; input events are in window pixels.
+        const size = BrowserWindow.fromWebContents(event.sender)?.getContentSize();
+        const point = hoverPoint(msg, event.sender.getZoomFactor(), size);
+        if (point) {
+          const wc = event.sender;
+          // Two steps: a single event is not always treated as movement.
+          wc.sendInputEvent({ type: 'mouseMove', x: Math.max(0, point.x - 3), y: point.y, movementX: 0, movementY: 0 });
+          setTimeout(() => {
+            if (!wc.isDestroyed()) wc.sendInputEvent({ type: 'mouseMove', x: point.x, y: point.y, movementX: 3, movementY: 0 });
+          }, 40);
         }
         break;
       }

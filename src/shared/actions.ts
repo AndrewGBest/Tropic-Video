@@ -24,6 +24,8 @@ export type BridgeMessage =
   | { kind: 'playerKey'; key: PlayerKey }
   /** Ask the shell to move the pointer a little, which makes a site's player show its controls. */
   | { kind: 'revealControls' }
+  /** Ask the shell to rest the pointer on a point of the page (CSS pixels), for menus that open on hover. */
+  | { kind: 'hover'; x: number; y: number }
   | { kind: 'diagnostics'; outline: string; url: string }
   | { kind: 'spike'; event: SpikeEvent };
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tvZoom } from '../src/main/zoom';
+import { hoverPoint, tvZoom } from '../src/main/zoom';
 
 const hd = (height: number): { width: number; height: number } => ({ width: (height * 16) / 9, height });
 
@@ -42,5 +42,21 @@ describe('tvZoom', () => {
   it('rounds down to two decimals', () => {
     expect(tvZoom(hd(1000))).toBe(1.85);
     expect(tvZoom(hd(1079))).toBe(1.99);
+  });
+});
+
+describe('hoverPoint', () => {
+  it('scales page coordinates by the zoom', () => {
+    expect(hoverPoint({ x: 880, y: 28 }, 1.33, [1280, 720])).toEqual({ x: 1170, y: 37 });
+    expect(hoverPoint({ x: 1, y: 1 }, 2, [1920, 1080])).toEqual({ x: 2, y: 2 });
+  });
+
+  it('refuses anything that is not a point inside the window', () => {
+    expect(hoverPoint({ x: 2000, y: 10 }, 1, [1280, 720])).toBeNull();
+    expect(hoverPoint({ x: -1, y: 10 }, 1, [1280, 720])).toBeNull();
+    expect(hoverPoint({ x: '5', y: 10 }, 1, [1280, 720])).toBeNull();
+    expect(hoverPoint({ x: Number.NaN, y: 10 }, 1, [1280, 720])).toBeNull();
+    expect(hoverPoint({ x: 5, y: 10 }, 0, [1280, 720])).toBeNull();
+    expect(hoverPoint({ x: 5, y: 10 }, 1, undefined)).toBeNull();
   });
 });

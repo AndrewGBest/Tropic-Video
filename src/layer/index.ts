@@ -60,12 +60,40 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     skip: [...adapter.selectors.rowPrev, ...adapter.selectors.rowNext],
   });
 
+  // Some menus open only when the pointer rests on their button. If Enter on
+  // a button that says it is collapsed leaves it collapsed, the shell is asked
+  // to put the pointer there. The pointer is taken away again on Back, or
+  // when focus leaves the button and whatever it opened.
+  let hoverHost: Element | null = null;
+  let hoverTrigger: Element | null = null;
+  let hoverTimer: number | undefined;
+  const unhover = (): void => {
+    if (!hoverHost) return;
+    hoverHost = null;
+    ignorePointerUntil = Date.now() + 500;
+    send({ kind: 'hover', x: 1, y: 1 });
+  };
+  const hoverIfStillCollapsed = (target: Element): void => {
+    if (target.getAttribute('aria-expanded') !== 'false') return;
+    view.clearTimeout(hoverTimer);
+    hoverTimer = view.setTimeout(() => {
+      if (!target.isConnected || target.getAttribute('aria-expanded') !== 'false') return;
+      const r = target.getBoundingClientRect();
+      hoverHost = target.parentElement ?? target;
+      hoverTrigger = target;
+      ignorePointerUntil = Date.now() + 500;
+      send({ kind: 'hover', x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
+    }, 300);
+  };
+
   // Left or right with nowhere to go: press the strip's own arrow, if the
   // adapter knows it. A carousel that swaps slides leaves focus on something
   // no longer shown, so focus then moves to the new slide.
   let edgeTimer: number | undefined;
   const moveInPage = (dir: Direction): void => {
-    if (nav.move(dir) || (dir !== 'left' && dir !== 'right')) return;
+    const moved = nav.move(dir);
+    if (hoverHost && nav.focused && !hoverHost.contains(nav.focused)) unhover();
+    if (moved || (dir !== 'left' && dir !== 'right')) return;
     const from = nav.focused;
     if (!from) return;
     const hit = edgeControl(from, dir === 'left' ? adapter.selectors.rowPrev : adapter.selectors.rowNext, view);
@@ -152,6 +180,12 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       (active as HTMLElement).blur();
       return;
     }
+    if (hoverHost) {
+      // Close the menu and put focus back on the button that opened it.
+      unhover();
+      if (hoverTrigger?.isConnected) nav.focus(hoverTrigger);
+      return;
+    }
     if (inPlayer()) {
       // First Back leaves the controls and returns to the picture.
       if (onPlayerControl()) {
@@ -228,6 +262,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
           nav.move('down');
           break;
         }
+        if (target && !inPlayer()) hoverIfStillCollapsed(target);
         // Activating a player control can replace it (a menu opens, a list
         // changes). Pick focus up again next to where it was.
         if (box && inPlayer()) {
@@ -323,6 +358,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       view.clearInterval(controlsTimer);
       view.clearInterval(keepAlive);
       view.clearTimeout(refocusTimer);
+      view.clearTimeout(hoverTimer);
       view.clearTimeout(edgeTimer);
       stopPads();
       stopGuard();

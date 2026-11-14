@@ -265,3 +265,16 @@ no working from the app's own files.
 **Residual risk, recorded not argued:** trade dress (see
 `LEGAL-GUARDRAILS.md`, "Look and feel"). A lawyer should look before a wide
 release.
+
+## 2026-11-14: Hover-only menus are opened by resting the pointer on them
+
+**Decision:** when Enter on a button that reports `aria-expanded="false"`
+leaves it collapsed, the layer asks the shell to move the pointer onto the
+button (`hover` message; coordinates validated and scaled in the main
+process). Back, or focus leaving the menu, moves the pointer to the window's
+corner again.
+**Reason:** on the live site the profile menu ignores a click and opens on
+hover. Moving the pointer is ordinary input (Hard rule 4) and needs no
+selectors.
+**Not done:** pointer-follows-focus everywhere. It would trigger the site's
+hover previews on every card; decide after seeing it on a TV.
