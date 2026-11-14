@@ -97,6 +97,10 @@ data folder (`~/.config/Tropic Video/` for the packaged app) and restart:
     "ContextMenu": "about",
     "F1": "search",
     "Ctrl+h": "none"
+  },
+  "buttons": {
+    "8": "about",
+    "9": "playPause"
   }
 }
 ```
@@ -105,8 +109,11 @@ A key is the name the keyboard or remote sends (a `KeyboardEvent.key` value),
 optionally with `Ctrl+` in front. Actions: `up`, `down`, `left`, `right`,
 `select`, `back`, `playPause`, `seekBack`, `seekForward`, `search`, `about`,
 `quit`, and `none` to switch a built-in key off. `zoom` sets the TV scale.
-Mistakes in the file are reported in the terminal and ignored. Gamepad buttons
-cannot be remapped yet.
+Mistakes in the file are reported in the terminal and ignored.
+
+`buttons` does the same for a game controller, by button number in the
+browser's standard layout (0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 8 Select, 9 Start,
+10 and 11 the stick clicks, 12 to 15 the D-pad).
 
 ## Your account
 

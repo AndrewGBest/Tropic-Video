@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { actionFor, ACTION_NAMES, normaliseKey, parseConfig } from '../src/shared/config';
 import { keyToAction } from '../src/layer/input/keys';
+import { Btn, buttonToAction } from '../src/layer/input/gamepad';
 
 describe('parseConfig', () => {
   it('treats a missing file as empty', () => {
@@ -80,5 +81,21 @@ describe('key overrides', () => {
 
   it('leave unmapped keys as they were', () => {
     expect(keyToAction({ key: 'ArrowLeft' }, 'browse', keys)).toEqual({ type: 'move', dir: 'left' });
+  });
+});
+
+describe('gamepad button overrides', () => {
+  it('are read from the config and validated', () => {
+    const { config, problems } = parseConfig({ buttons: { '8': 'about', '09': 'playPause', '40': 'back', x: 'back', '3': 'fly' } });
+    expect(config.buttons).toEqual({ '8': 'about', '9': 'playPause' });
+    expect(problems).toHaveLength(3);
+  });
+
+  it('win over the built-in table and can switch a button off', () => {
+    const buttons = { [String(Btn.Y)]: 'about', [String(Btn.X)]: 'none' } as const;
+    expect(buttonToAction(Btn.Y, 'browse')).toEqual({ type: 'search' });
+    expect(buttonToAction(Btn.Y, 'browse', buttons)).toEqual({ type: 'settings' });
+    expect(buttonToAction(Btn.X, 'browse', buttons)).toBeNull();
+    expect(buttonToAction(Btn.A, 'browse', buttons)).toEqual({ type: 'select' });
   });
 });

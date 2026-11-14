@@ -86,7 +86,7 @@ function startUrl(): string {
 
 function createWindow(): BrowserWindow {
   const boot = encodeURIComponent(
-    JSON.stringify({ options: { ...options, version: app.getVersion(), keys: userConfig.keys }, adapter: loadAdapter() }),
+    JSON.stringify({ options: { ...options, version: app.getVersion(), keys: userConfig.keys, buttons: userConfig.buttons ?? {} }, adapter: loadAdapter() }),
   );
   const win = new BrowserWindow({
     width: 1280,

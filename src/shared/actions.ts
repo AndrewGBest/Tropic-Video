@@ -45,4 +45,6 @@ export interface LayerOptions {
   version?: string;
   /** Key mappings from the user's config file. */
   keys?: Record<string, ActionName>;
+  /** Gamepad button mappings from the user's config file. */
+  buttons?: Record<string, ActionName>;
 }

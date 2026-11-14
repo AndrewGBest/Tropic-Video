@@ -4,7 +4,8 @@
 //
 //   {
 //     "zoom": 2,
-//     "keys": { "F1": "search", "ContextMenu": "about", "MediaStop": "back", "Ctrl+h": "none" }
+//     "keys": { "F1": "search", "ContextMenu": "about", "MediaStop": "back", "Ctrl+h": "none" },
+//     "buttons": { "8": "about", "9": "playPause" }
 //   }
 //
 // A key is a KeyboardEvent.key value (what a remote sends: "MediaStop",
@@ -23,6 +24,8 @@ export interface UserConfig {
   zoom?: number;
   /** Key (as written by the user, "Ctrl+" normalised) to action. */
   keys: Record<string, ActionName>;
+  /** Gamepad button number (standard mapping, 0 to 16) to action. */
+  buttons?: Record<string, ActionName>;
 }
 
 const MAX_KEYS = 200;
@@ -63,8 +66,23 @@ export function parseConfig(raw: unknown): { config: UserConfig; problems: strin
       }
     }
   }
+  if (r['buttons'] !== undefined) {
+    if (typeof r['buttons'] !== 'object' || r['buttons'] === null || Array.isArray(r['buttons'])) {
+      problems.push('"buttons" must be an object of button number: action');
+    } else {
+      const buttons: Record<string, ActionName> = {};
+      for (const [spec, action] of Object.entries(r['buttons']).slice(0, MAX_KEYS)) {
+        const n = Number(spec);
+        if (!/^\d{1,2}$/.test(spec) || n > 31) problems.push(`button "${spec.slice(0, 40)}" must be a number from 0 to 31`);
+        else if (typeof action !== 'string' || !(ACTION_NAMES as readonly string[]).includes(action)) {
+          problems.push(`button ${n}: unknown action (use one of ${ACTION_NAMES.join(', ')})`);
+        } else buttons[String(n)] = action as ActionName;
+      }
+      config.buttons = buttons;
+    }
+  }
   for (const name of Object.keys(r)) {
-    if (name !== 'zoom' && name !== 'keys') problems.push(`unknown setting "${name.slice(0, 40)}"`);
+    if (name !== 'zoom' && name !== 'keys' && name !== 'buttons') problems.push(`unknown setting "${name.slice(0, 40)}"`);
   }
   return { config, problems };
 }

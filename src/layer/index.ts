@@ -493,7 +493,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
   view.addEventListener('mousemove', onPointer, { passive: true });
 
-  const stopPads = startPolling(view, mode, dispatch);
+  const stopPads = startPolling(view, mode, dispatch, options.buttons);
 
   // Tell the shell when video is playing so it can hold off the screensaver.
   let lastPlaying = false;

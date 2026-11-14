@@ -41,7 +41,7 @@ how in `STATUS.md`.
 ## Phase 3: HTPC polish
 
 - [x] Config file with key remapping and zoom (edited by hand; no settings screen)
-- [ ] Gamepad button remapping
+- [x] Gamepad button remapping in the config file (unit-tested; no physical controller tried)
 - [x] MPRIS and media keys (Chromium's own; verified, nothing to build)
 - [ ] CEC helper (optional, separate process)
 - [ ] Idle inhibit verified under Wayland (done on KDE), X11 and gamescope

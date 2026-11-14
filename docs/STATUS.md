@@ -92,7 +92,7 @@ Update this at the end of every working session.
 
 - Config file (`config.json` in the user data folder): key remapping and a
   zoom setting, validated by `src/shared/config.ts`. Documented in the README.
-  Gamepad buttons are not remappable yet.
+  Gamepad buttons can be remapped the same way (unit-tested only).
 
 - "Cannot reach the streaming service" notice when a page fails to load, with
   automatic retry (5 s, 10 s, ... up to every 30 s).

@@ -1,6 +1,7 @@
 // Gamepad handling. The state machine is pure (time is passed in) so repeat
 // behaviour is unit-tested; `startPolling` is the thin browser wrapper.
 import type { Action } from '../../shared/actions';
+import { actionFor, type ActionName } from '../../shared/config';
 import type { Mode } from './keys';
 
 // Standard Gamepad mapping button indices.
@@ -38,7 +39,9 @@ const REPEATABLE = new Set<number>([
   Btn.LB, Btn.RB,
 ]);
 
-export function buttonToAction(button: number, mode: Mode): Action | null {
+/** `overrides` are the user's own mappings from the config file, by button number; they win over the built-in table. */
+export function buttonToAction(button: number, mode: Mode, overrides: Readonly<Record<string, ActionName>> = {}): Action | null {
+  if (Object.hasOwn(overrides, String(button))) return actionFor(overrides[String(button)]!);
   switch (button) {
     case Btn.Up:
     case STICK_UP:
@@ -127,6 +130,7 @@ export function startPolling(
   view: Window,
   getMode: () => Mode,
   dispatch: (a: Action) => void,
+  overrides: Readonly<Record<string, ActionName>> = {},
 ): () => void {
   const trackers = new Map<number, RepeatTracker>();
   let stopped = false;
@@ -152,7 +156,7 @@ export function startPolling(
         }
         const held = heldButtons({ buttons: pad.buttons.map((b) => b.pressed), axes: pad.axes });
         for (const b of tracker.update(held, view.performance.now())) {
-          const action = buttonToAction(b, getMode());
+          const action = buttonToAction(b, getMode(), overrides);
           if (action) dispatch(action);
         }
       }
