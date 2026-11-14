@@ -32,7 +32,12 @@ The reasoning for each is in `docs/LEGAL-GUARDRAILS.md`.
 5. **No trademarks in the name, app ID, icon or artwork.** "Prime", "Amazon"
    and their logos stay out. Plain-text descriptions of compatibility are fine,
    always with the non-affiliation notice.
-6. **Original design only.** Do not imitate the look of the service's TV app.
+6. **Familiar layout, original material.** The layout and interaction patterns
+   of the service's TV app may be used as a reference (Andrew's decision,
+   2026-11-14). Nothing of theirs is copied: no artwork, logos, icons, fonts,
+   screenshots, text or code, and the app must never present itself as the
+   official app. Work from public descriptions and from using the service,
+   not from its app's files (rule 8).
 7. **Selectors come from evidence.** Nothing is added to `adapters/*.json`
    without a diagnostics outline from the live site showing it. Never guess a
    selector from memory. Everything must still work, degraded, with an empty adapter.

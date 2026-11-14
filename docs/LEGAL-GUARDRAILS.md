@@ -26,7 +26,7 @@ device serial (see `DESIGN.md` section 2 for what was found in one such repo).
 | 3. Honest identity | Misrepresentation to obtain service not offered to this device class | The service states that computers other than Windows and macOS get standard definition. Posing as another device to get more would be the kind of workaround rule 2 forbids. **[Guess]** on how a court would characterise it; the rule avoids the question. |
 | 4. No modification of the service | Terms-of-use breach; interference claims | The service's terms forbid disguising location. Ad blocking on a paid, ad-supported tier is the feature most likely to provoke a response. **[Guess]** |
 | 5. No trademarks in name or icon | Trademark infringement, confusion about origin | Amazon's trademark guidelines list use of its marks in an application name as prohibited. Naming compatibility in plain text is the usual nominative-use approach; a lawyer should confirm the wording. |
-| 6. Original design | Copyright and trade-dress arguments over look and feel | An original interface removes the argument. |
+| 6. Familiar layout, original material | Copyright in the service's artwork, icons, fonts and text; confusion about who made the app | Changed by Andrew on 2026-11-14 from "original design only". Layout and interaction conventions (a top bar, a banner, rows of cards, a highlighted focused card) are common to TV apps and are used as a reference. Everything the layer draws is made for this project, and rules 1 and 5 still keep the service's material and marks out. **[Guess]** that this leaves little risk; see the trade-dress note below. |
 | 7. Evidence-based selectors | None legal; reliability | Guessed selectors silently break. |
 | 8. No reverse engineering of apps | Licence breach; anti-circumvention if apps are protected | Reading a web page your browser was sent is ordinary use. Decompiling a TV app is not. |
 | 9. Credentials untouched | Privacy harm, account compromise | The app never needs them; the cookie jar stays on the user's disk. |
@@ -42,6 +42,14 @@ device serial (see `DESIGN.md` section 2 for what was found in one such repo).
   and the README says so. The full terms have not been reviewed clause by clause.
 - **Injecting a stylesheet and focus handling** is the same class of activity
   as a browser extension or user style. **[Guess]** that it is treated the same.
+- **Look and feel.** Rule 6 now allows the service's TV layout as a
+  reference. Copyright does not protect an arrangement as an idea, but a
+  distinctive overall appearance can be claimed as trade dress where it
+  identifies the source and copying it confuses users. **[Guess]**, from
+  general knowledge and not checked against a source: the risk is low while
+  the app uses none of the service's assets, keeps its own name and icon, and
+  carries the non-affiliation notice. This is Andrew's call as owner; a lawyer
+  should confirm before a wide release.
 - **Jurisdiction.** Reasoning above leans on Canadian and US law. Users
   elsewhere are subject to their own.
 - **Takedown.** If the rights holder objects, the project responds promptly

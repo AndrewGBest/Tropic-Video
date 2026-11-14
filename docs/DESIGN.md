@@ -119,12 +119,35 @@ I cloned both repos and read the code.
 - **CEC:** a small optional helper using libcec that turns remote presses into key events. Most mini PCs need a USB CEC adapter for this [Guess].
 - **All mappings** live in a config file and are remappable in settings.
 
+## 6a. TV layout reference (added 2026-11-14)
+
+What the service's TV app looks like, from published descriptions, used as
+the reference for layout under guardrail 2 below. No image of it is kept here.
+
+- A navigation bar runs across the top with Home, Movies, TV Shows, Sports and
+  Live TV, then a destination for what the membership includes, then add-on
+  subscriptions [Sourced: Engadget, July 2024].
+- Below the bar is a rotating banner ("hero rotator") for the selected
+  section; on living-room devices video plays in it automatically while
+  browsing [Sourced: Engadget].
+- Under that, rows of cards. The 2024 update added animations, quicker page
+  transitions and zoom effects [Sourced: Engadget, quoting Amazon].
+- The previous (2022) design had the menu down the left side instead
+  [Sourced: search summary of coverage; not read in full].
+
+The website the app loads already has this structure (bar, banner, rows), as
+seen on the live site in session 2. So the layer's job is the TV behaviour on
+top: remote navigation, couch-sized scale, a focused card that stands out and
+grows, banner and rows that move with the remote. How the TV app handles
+focus in detail (whether a focused card expands into a panel) was not found
+in a source and is not assumed.
+
 ## 7. Legal guardrails
 
 Design rules, each with the reason. Have a lawyer check anything you plan to distribute widely.
 
 1. **Ship none of Amazon's material.** No scripts, fonts, logos, artwork, sounds or screenshots of their UI in the repo or the package. Everything Amazon-owned arrives from Amazon's servers into the user's own session, as in any browser.
-2. **Do not copy the look of Amazon's TV app.** Design your own focus style, HUD and screens. An original design avoids both copyright and look-and-feel arguments.
+2. **Borrow layout, never material.** (Changed 2026-11-14; this rule first said not to copy the look at all.) The layout and interaction patterns of Amazon's TV app may be used as a reference. None of its artwork, logos, icons, fonts, screenshots, text or code is copied, and the app must not pass itself off as the official one. See `DECISIONS.md`.
 3. **Leave DRM completely alone.** Use the stock CDM through the browser's standard interface. No key extraction, no patched CDM, no device-level spoofing to unlock HD, no recording or download feature. Canada's Copyright Act prohibits circumventing protection measures; its interoperability exception is written around lawfully obtained computer programs and is lost if the act infringes copyright [Sourced: s. 41.12]. Do not design anything that would need to lean on that exception.
 4. **Do not redistribute Widevine.** Let the shell fetch it from Google, or use the system browser's copy.
 5. **Keep Amazon's marks out of the name, app ID and icon.** Amazon's trademark guidelines list use in an application name as prohibited [Sourced], and Flathub requires a distinct name and icon [Sourced]. Describe compatibility in plain text only ("an unofficial TV-style front end for watching Prime Video"), with a clear non-affiliation notice.
@@ -162,6 +185,9 @@ Design rules, each with the reason. Have a lawyer check anything you plan to dis
 - I could not read Vacuumflix's minified Netflix bundle in any meaningful way, and did not try to; conclusions about it come from the host code and file listing.
 
 ## 11. Sources
+
+- Engadget, "Prime Video gets a much-needed UI overhaul with a new content bar and AI recommendations" (July 2024): https://www.engadget.com/prime-video-gets-a-much-needed-ui-overhaul-with-a-new-content-bar-and-ai-recommendations-120019397.html
+
 
 - VacuumTube repo (code read directly): https://github.com/shy1132/VacuumTube
 - Vacuumflix repo (code read directly): https://github.com/Ciphay/Vacuumflix

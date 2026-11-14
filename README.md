@@ -21,7 +21,9 @@ in a browser.
 
 ## What it is not
 
-- Not the service's own TV app, and it does not imitate it.
+- Not the service's own TV app. Its layout follows familiar TV conventions,
+  including that app's, but it contains none of the service's artwork, logos,
+  fonts or code.
 - Not a way to get higher quality than a Linux browser gets. The service limits
   Linux computers to standard definition.
 - Not an ad blocker, downloader or region unlocker, and it never will be.

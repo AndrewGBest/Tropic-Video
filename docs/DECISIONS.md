@@ -249,3 +249,19 @@ times their size.
 bounced between invisible duplicates and the backdrop and never changed slide.
 **Reopen if:** the backdrop rule hides something a user needs to reach; it
 has only been watched on the home, title and player pages.
+
+## 2026-11-14: Hard rule 6 loosened: the service's TV layout may be a reference
+
+**Decision (Andrew):** drawing inspiration and layout from the official TV
+app is allowed; the earlier "original design only" rule was overly cautious.
+No copyrighted or trademarked material goes into the application. `CLAUDE.md`
+rule 6, `LEGAL-GUARDRAILS.md`, `DESIGN.md` and the README were changed to
+match. This supersedes the "Declined" paragraph in the entry of the same date
+above, as far as layout goes; pulling the service's images into the repo is
+still out (rule 1).
+**How it is applied:** `DESIGN.md` section 6a describes the TV layout from
+published sources. Rules 1, 5 and 8 are unchanged: no assets, no marks, and
+no working from the app's own files.
+**Residual risk, recorded not argued:** trade dress (see
+`LEGAL-GUARDRAILS.md`, "Look and feel"). A lawyer should look before a wide
+release.
