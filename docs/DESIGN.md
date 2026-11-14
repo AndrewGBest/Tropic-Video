@@ -57,7 +57,7 @@ I cloned both repos and read the code.
 | Legal exposure [Guess] | Lowest | Medium: undocumented API use, terms of use | Highest: copyright, anti-circumvention, trademark |
 | Effort [Guess] | 4 to 8 weeks part-time | 3 to 6 months | 6+ months, specialist reverse engineering |
 
-**Choice: A**, with a possible later step toward B's look (your own home screen built from data the page already loaded) once the base is stable.
+**Choice: A.** A later step toward B's look (an own home screen) was considered in the first version and dropped on 2026-11-14: the site's interface with zoom is good enough on a TV (section 5.2).
 
 ## 5. Recommended architecture
 
@@ -70,10 +70,10 @@ I cloned both repos and read the code.
 │ Chromium web view  →  https://www.primevideo.com         │
 │  stock Widevine CDM via EME (untouched)                  │
 ├──────────────────────────────────────────────────────────┤
-│ 10-foot layer (injected, all original code)              │
+│ Remote layer (injected, all original code)               │
 │  input router → spatial navigation → focus ring          │
-│  TV stylesheet · player HUD · on-screen keyboard         │
-│  settings overlay · site adapter (selectors.json)        │
+│  page zoom · on-screen keyboard · short messages         │
+│  site adapter (selectors.json)                           │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -84,14 +84,45 @@ I cloned both repos and read the code.
 
 **Identity:** send an honest browser user agent. Unlike YouTube, there is no TV endpoint to unlock, so there is nothing to gain from posing as a TV, and posing as one is where option C's legal trouble starts.
 
-### 5.2 The 10-foot layer
+### 5.2 The remote layer
 
-- **Spatial navigation.** Collect focusable elements (links, buttons, cards), and on each direction press pick the nearest candidate by geometry in that direction. Remember the last focused card per row. Scroll the focused item into a safe zone. This is generic and needs no knowledge of the site.
-- **TV stylesheet.** Page zoom of roughly 1.5 to 2 at 1080p, thick high-contrast focus ring, hover-only menus forced open or hidden, header trimmed, overscan margins. Support user CSS files, as VacuumTube does.
-- **Site adapter.** One small data file mapping roles to selectors: profile tiles, row containers, cards, play button, player controls, subtitle menu, skip buttons, search field. Prefer ARIA roles and stable attributes over class names. Ship it separately from the app so a site change is fixed by a data update, not a release.
-- **Player HUD.** Your own transport bar that shows the page's `<video>` position and controls it only through ordinary key presses and the site's own controls, never by calling the element's methods (see `DECISIONS.md`, 2026-11-13) and clicks the site's own subtitle, audio and skip controls through the adapter. If the adapter fails, fall back to showing the site's native controls with spatial navigation.
-- **On-screen keyboard.** Your own, for search. Sign-in happens on Amazon's own login page inside the web view; the app never sees or stores the password, only the browser's cookie jar in the profile directory.
-- **Own screens.** Splash, settings, exit confirmation, offline/error. All original artwork.
+**Direction (Andrew, 2026-11-14): the service's own interface is the
+interface.** With page zoom it already reads well on a TV, so the app does not
+build a second one. The effort goes into remote coverage: every screen and
+control reachable with a D-pad, focus that is always visible and predictable,
+and clear feedback. The layer draws something of its own only where the
+site's interface cannot be used with a remote at all.
+
+What the layer does:
+
+- **Spatial navigation.** Collect focusable elements (links, buttons, cards, styled options) and on each direction press pick the nearest by geometry. Rows remember where you were. Carousels turn at their edge. Hidden duplicates and backdrop links are ignored. Generic first; the adapter only where generic fails.
+- **Scale.** Ordinary page zoom to a 960x540 canvas (2x at 1080p). No restyling of the site.
+- **Focus feedback.** One ring, drawn by the layer, and a slight growth of the focused card. Short messages (a toast) when something is refused or saved.
+- **The site's player, driven by the remote.** Play, pause and seek are real key presses the site's player acts on. Up or down reveals the site's own control bar and menus and moves focus through them. Back closes a menu, then the player. No separate transport bar.
+- **Menus that need a pointer.** Hover-only menus are opened by resting the pointer on them.
+- **Site adapter.** One small data file of selectors, each backed by an outline from the live site, for the few things the generic rules cannot find (search opener, player container, carousel arrows, purchase controls).
+
+What the layer draws itself, and why each is necessary:
+
+| Own UI | Why the site's interface cannot do it |
+|---|---|
+| Focus ring and focused-card growth | The site shows focus for a mouse or Tab key, not for a D-pad at a distance. |
+| On-screen keyboard | A remote has no letters; without it search is unusable. |
+| Toast messages | Somewhere to say "blocked" or "saved" from the layer. |
+| "Page blocked" notice | Shown when nothing has loaded, so the window is not blank. |
+
+What is deliberately not built (changed from the first version of this document):
+
+- **No player HUD.** The site's control bar is used as it is.
+- **No home screen, splash or restyled pages.** No trimming of the site's header and no forcing or hiding of its menus with CSS.
+- **Settings, About and exit confirmation** stay as small as they can be when they are built; they are needed for remapping and the non-affiliation notice, not as a showcase.
+
+A new piece of own UI needs the same justification as the rows in the table:
+name the thing a remote user cannot do with the site's interface.
+
+Sign-in happens on the service's own page; the app never sees or stores the
+password, and the on-screen keyboard stays out of password and one-time-code
+fields.
 
 ### 5.3 System integration
 
@@ -169,7 +200,7 @@ Design rules, each with the reason. Have a lawyer check anything you plan to dis
 |---|---|---|
 | 0. Spike (2 evenings) | Does ECS Electron sign in and play a title on Linux? Does the Chromium + DevTools route? | One shell chosen, with the licence result written down |
 | 1. Navigable shell | Fullscreen window, spatial navigation, gamepad + keyboard, focus ring, TV zoom | Browse home → title → play using only a controller |
-| 2. Player and text entry | HUD, seek, subtitles/audio, skip buttons, on-screen keyboard, profile picker | A full episode watched and the next one started from the couch |
+| 2. Player and text entry | The site's player and its menus driven by the remote, on-screen keyboard for search, profile menu, skip and next-episode prompts | A full episode watched and the next one started from the couch |
 | 3. HTPC polish | Settings overlay, remapping, userstyles, idle inhibit, MPRIS, CEC helper, adapter auto-update | Runs for a week as the daily driver on one box |
 | 4. Packaging | Flatpak, AppImage, README, disclaimers | Clean install on a fresh Kinoite machine |
 | 5. Upkeep | Selector smoke test you run against the live site | A site change is detected and patched without a new build |

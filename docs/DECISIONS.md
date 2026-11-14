@@ -295,3 +295,19 @@ or the site's search form does not submit.
 password keyboard: sign-in is the user's business on the service's own page
 (Hard rule 9), with a real keyboard.
 **Reopen if:** users need other scripts or capitals for search.
+
+## 2026-11-14: The site's interface is the interface; own UI only where a remote needs it
+
+**Decision (Andrew):** the standard interface works well on a TV with the
+zoom, so extra HUDs are kept to what is required. Effort goes into remote
+coverage, good navigation and feedback, staying with the default interface
+unless it is really bad for TVs or remotes.
+**What changed:** `DESIGN.md` 5.2 is rewritten around this. The planned
+player HUD, own home screen, splash and CSS restyling of the site are dropped.
+The layer's own UI is the focus ring, the on-screen keyboard, toasts and the
+blocked-page notice, each listed with the reason it is needed. The roadmap is
+updated to match.
+**Test for anything new:** name what a remote user cannot do with the site's
+own interface. If there is nothing, do not draw it.
+**Reopen if:** a part of the site turns out unusable from a remote even with
+focus, keys and pointer help.

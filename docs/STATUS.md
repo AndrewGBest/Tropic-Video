@@ -62,6 +62,11 @@ Update this at the end of every working session.
   focus lands on a text field, types through the shell as ordinary text
   input, and is put away by Back or by typing on a real keyboard.
 
+- Direction set by Andrew: keep to the site's own interface, own UI only where
+  a remote needs it (`DESIGN.md` 5.2, `DECISIONS.md`).
+- A made-up player page (`test/fixtures/player.html`) now covers player
+  control in the e2e run. It exposed and fixed two focus races.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
