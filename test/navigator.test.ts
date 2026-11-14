@@ -398,6 +398,16 @@ describe('following a jump', () => {
 });
 
 describe('pop-ups', () => {
+  it('ignores a dialog that something else covers', () => {
+    document.body.innerHTML = `<div role="dialog" aria-modal="true" id="under" data-rect="250,40,460,500">${card('x', 300, 100)}</div><div id="playerOnTop"></div>`;
+    const original = document.elementFromPoint;
+    document.elementFromPoint = () => document.getElementById('playerOnTop');
+    expect(openDialog(document)).toBeNull();
+    document.elementFromPoint = () => document.getElementById('x');
+    expect(openDialog(document)?.id).toBe('under');
+    document.elementFromPoint = original;
+  });
+
   it('finds an open modal dialog and ignores closed or non-modal ones', () => {
     document.body.innerHTML = `
       ${card('behind', 0, 0)}

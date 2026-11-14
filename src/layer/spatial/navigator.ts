@@ -145,7 +145,13 @@ export function openDialog(doc: Document): Element | null {
   let found: Element | null = null;
   for (const el of doc.querySelectorAll('[role="dialog"][aria-modal="true"], dialog[open]')) {
     const r = el.getBoundingClientRect();
-    if (r.width >= 4 && r.height >= 4) found = el;
+    if (r.width < 4 || r.height < 4) continue;
+    // It must really be in front. Seen on the live site: a station's pop-up
+    // stays open underneath the player it started. Where the browser cannot
+    // say what is on top (no layout), the dialog is taken at its word.
+    const top = typeof doc.elementFromPoint === 'function' ? doc.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2) : null;
+    if (top && !el.contains(top) && !top.contains(el)) continue;
+    found = el;
   }
   return found;
 }

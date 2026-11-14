@@ -122,12 +122,13 @@ Update this at the end of every working session.
 | My Stuff and a movie's title page have no traps | live site, Down and Right walks |
 | Live TV programme pop-up from the remote | live site: Enter opened it with focus on its close button, Back closed it, focus returned to the programme |
 | Season selector from the remote | live site, a multi-season title: Down reached the selector, Enter showed seven season links, Down moved onto one, Back closed the list and focus returned to the selector. No season was switched |
+| A collection grid walks in all four directions | live site: column kept going down, edges stop, more cards load as you go |
+| Live TV from the remote | live site: a station's pop-up, its play button, the live player's controls, and Back to the pop-up. Space did not pause the live stream (the site's choice, not checked further) |
 
 ### Still not verified after session 2
 
-- Remote coverage still to walk: Live TV playback (the stations tried opened an information
-  pop-up instead of playing), the rent or buy drawer on a movie page (not
-  opened under automation), and a collection page.
+- Remote coverage still to walk: the rent or buy drawer on a movie page (not
+  opened under automation).
 
 - Sign-in pages with a remote. An agent-driven run must use `--automation`,
   which blocks the signed-out landing page, so only Andrew can try these.
