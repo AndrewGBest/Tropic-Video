@@ -4,6 +4,9 @@ import { installPurchaseGuard, isSpendControl, looksLikeSpendUrl } from '../src/
 import { buildOutline, maskIdentifier, sanitizeUrl } from '../src/layer/diagnostics/outline';
 import { parseAdapter } from '../src/layer/adapter/adapter';
 import { browserUserAgent, isAllowedUrl } from '../src/main/hosts';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { aboutTitle, NOTICE } from '../src/shared/about';
 
 function html(markup: string): HTMLElement {
   document.body.innerHTML = markup;
@@ -185,5 +188,20 @@ describe('user agent', () => {
     expect(browserUserAgent(ua)).toBe(
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
     );
+  });
+});
+
+describe('about panel', () => {
+  const flat = (text: string): string => text.replace(/^> ?/gm, '').replace(/\s+/g, ' ');
+
+  it('carries the required notice, word for word as in the guardrails and the README', () => {
+    for (const file of ['docs/LEGAL-GUARDRAILS.md', 'README.md']) {
+      expect(flat(readFileSync(join(__dirname, '..', file), 'utf8'))).toContain(NOTICE);
+    }
+  });
+
+  it('shows the version when it has one', () => {
+    expect(aboutTitle('0.0.1')).toBe('Tropic Video 0.0.1');
+    expect(aboutTitle(undefined)).toBe('Tropic Video');
   });
 });

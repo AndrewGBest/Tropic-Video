@@ -40,4 +40,6 @@ export interface LayerOptions {
   dev: boolean;
   automation: boolean;
   spike: boolean;
+  /** App version, shown on the About panel. */
+  version?: string;
 }

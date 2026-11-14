@@ -7,6 +7,7 @@ import { buildOutline, sanitizeUrl } from './diagnostics/outline';
 import { installPurchaseGuard } from './guard/purchase-guard';
 import { startPolling } from './input/gamepad';
 import { keyToAction, type Mode } from './input/keys';
+import { aboutTitle, HELP, NOTICE } from '../shared/about';
 import { isSecretField, OSK_ROWS, OskModel } from '../shared/osk';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
 import { findMainVideo, isPlayerActive, playerScope } from './player';
@@ -159,6 +160,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   // remote can type. It types through the shell, like a real keyboard would.
   const osk = new OskModel();
   let oskOpen = false;
+  let aboutOpen = false;
   const drawOsk = (): void => overlay.keyboard(oskOpen ? OSK_ROWS : null, { row: osk.row, index: osk.index });
   const openOsk = (): void => {
     if (!oskOpen) osk.reset();
@@ -364,6 +366,14 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     // overrides it (Back right after Enter must not have focus put back).
     view.clearTimeout(refocusTimer);
     view.clearTimeout(followTimer);
+    if (aboutOpen) {
+      // The panel only needs closing; every other key waits until it is gone.
+      if (a.type === 'back' || a.type === 'select' || a.type === 'settings') {
+        aboutOpen = false;
+        overlay.about(null);
+      }
+      if (a.type !== 'exit') return;
+    }
     if (oskOpen) {
       if (a.type === 'move') {
         // Up from the top row leaves the keyboard for the page.
@@ -444,7 +454,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
         overlay.toast('Page outline saved (structure only, no text)');
         break;
       case 'settings':
-        overlay.toast('Settings are not built yet');
+        closeOsk();
+        aboutOpen = true;
+        overlay.about({ title: aboutTitle(options.version), notice: NOTICE, help: HELP });
         break;
       case 'exit':
         send({ kind: 'exit' });

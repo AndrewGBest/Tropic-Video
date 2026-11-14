@@ -110,6 +110,7 @@ What the layer draws itself, and why each is necessary:
 | On-screen keyboard | A remote has no letters; without it search is unusable. |
 | Toast messages | Somewhere to say "blocked" or "saved" from the layer. |
 | "Page blocked" notice | Shown when nothing has loaded, so the window is not blank. |
+| About and help panel | The non-affiliation notice must be shown in the app, and a remote user needs to be told the keys. |
 
 What is deliberately not built (changed from the first version of this document):
 

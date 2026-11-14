@@ -83,6 +83,10 @@ Update this at the end of every working session.
   gives a short squeeze when the focused control is pressed. Checked in the
   e2e run; not yet judged by eye on a TV.
 
+- About and help panel on the settings key (Ctrl+O, right stick click): the
+  required non-affiliation notice, the version and the remote's keys. A test
+  keeps its wording identical to the guardrails and the README.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -243,7 +247,7 @@ Update this at the end of every working session.
 ### Known gaps and rough edges
 
 - (Resolved in session 2: TV scaling.)
-- `settings` action only shows a toast.
+- (Resolved in session 2: the settings key opens the About and help panel. There are still no settings to change.)
 - Back in the player relies on history unless the adapter supplies a close control.
 - The spend-word list will over-block in automation (for example "Sign up" links).
 

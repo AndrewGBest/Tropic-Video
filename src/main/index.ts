@@ -60,7 +60,7 @@ function startUrl(): string {
 }
 
 function createWindow(): BrowserWindow {
-  const boot = encodeURIComponent(JSON.stringify({ options, adapter: loadAdapter() }));
+  const boot = encodeURIComponent(JSON.stringify({ options: { ...options, version: app.getVersion() }, adapter: loadAdapter() }));
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
