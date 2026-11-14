@@ -2,6 +2,47 @@
 
 Update this at the end of every working session.
 
+## As of 2026-11-13 (session 2, Andrew's Fedora VM, live site reachable)
+
+### Changed in session 2
+
+- Spike probe (`src/layer/spike.ts`) now records a `timeupdate` sample every
+  ten seconds per video and whether MediaKeys are attached to the element.
+- `VM-SETUP.md`: the first, signed-out spike run is hand-driven without
+  `--automation`. Two entries added to `DECISIONS.md`.
+
+### Verified in session 2, and how
+
+| Claim | Evidence |
+|---|---|
+| Checks pass on the VM | `npm run check` (50 unit tests, rule check) and `npm run e2e` (14 steps) on the Wayland desktop |
+| Widevine component installs | spike log and report: version 4.10.3112.0 |
+| **Protected playback works in the shell in this VM (Phase 0)** | spike report from Andrew's hand-driven run: `eme-access` ok, MediaKeys attached, `encrypted` events, `currentTime` 0 to 100 s at 960x540, no `video-error` |
+| Picture and sound were fine in that run | Andrew's report (the spike report sees element state, not pixels) |
+| The site loads and sign-in completes in the shell | Andrew's report plus the playback above |
+| Under `--automation` a signed-out start shows a blank window | DevTools: navigation cancelled; `curl`: home redirects to `/offers/nonprimehomepage`, which the guard's URL pattern blocks |
+
+### Still not verified after session 2
+
+- Any resolution above 960x540, and playback on bare metal.
+- Whether `--automation` runs load once signed in (guess: yes).
+- Everything else in the "NOT verified" list below except the first item and
+  the sign-in and user-agent parts of the second.
+
+### Found, not fixed
+
+- A blocked navigation shows nothing: the window just stays black. It should
+  show a toast or at least log the blocked URL's path.
+- VA-API hardware decode fails to initialise in the VM (virtio GPU); decode is
+  in software there.
+
+### Next actions (replaces the list at the bottom)
+
+1. Try an `--automation` run with the signed-in profile.
+2. Show something when a navigation is blocked.
+3. Capture outlines from the live site and write adapter revision 1.
+4. TV scaling and row memory.
+
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)
 
 ### Changed late in session 1
@@ -25,6 +66,9 @@ Update this at the end of every working session.
   and page-load failures and renderer exits are logged to the terminal.
 - Still unknown: why the page was blank. Suspect GPU compositing in the VM;
   try `--disable-gpu`.
+- Resolved in session 2: the cause was not the GPU. The automation guard
+  cancelled the signed-out home page's redirect to an `/offers/` URL (see the
+  session 2 table above and `DECISIONS.md`).
 
 ### Built
 

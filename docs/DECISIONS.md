@@ -87,3 +87,37 @@ generated when the repository was created. `package.json` says
 **Note:** the licence covers the code, not the name. The README asks forks to
 use a different name.
 **Reopen if:** Andrew wants "or later", or a contributor needs a different licence.
+
+## 2026-11-13: Phase 0 spike passed in the Fedora VM; keep the castLabs Electron shell
+
+**Result:** protected playback works in the castLabs Electron 44.10.1 shell
+(Chromium 152) inside Andrew's Fedora VM. Evidence, from
+`spike-report.json` of a run Andrew launched and drove by hand:
+Widevine component 4.10.3112.0 installed; `eme-access` ok; one video element
+with MediaKeys attached, two `encrypted` events, `playing`, and `currentTime`
+advancing from 0 to 100 s in ten-second samples at 960x540; a pause and
+resume; no `video-error`. The site accepted the shell's user agent and the
+sign-in flow completed in the window (Andrew's report).
+**Decision:** the Chromium fallback shell is not needed for now.
+Andrew confirmed by eye and ear that picture and sound were fine in that run
+(the report sees element state, not pixels).
+**Not shown:** any resolution above
+960x540 (a guess: the service limits software-CDM browsers on Linux; nothing
+will be done to work around it, Hard rule 2); bare-metal behaviour; hardware
+video decode (VA-API failed to initialise in the VM, so decode was software).
+**Reopen if:** the service starts refusing the shell, or a castLabs release
+drops the component updater.
+
+## 2026-11-13: The spike's first sign-in is a hand-driven run without `--automation`
+
+**Reason:** a signed-out visit to the service's home page is redirected to
+`/offers/nonprimehomepage` (seen as a 302 with `curl` and as a cancelled
+navigation over DevTools). The automation guard refuses URLs matching
+`/offers`, so under `--automation` the window stays blank and sign-in cannot
+be reached. Rather than weaken the guard (Hard rule 10), Andrew launched
+`npm run spike` himself and drove it entirely by hand; the agent did not
+attach to that run and only read the report afterwards.
+**Unverified guess:** with the signed-in profile the home page no longer
+redirects there, so later `--automation` runs should load.
+**Reopen if:** signed-in automation runs are also blocked; any narrowing of
+the URL pattern needs evidence from the live site and unit tests.

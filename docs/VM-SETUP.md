@@ -21,7 +21,11 @@ in the VM, repeat it on bare metal before concluding anything.
 2. `npm run check` and `xvfb-run -a npm run e2e` (or `npm run e2e` on a
    desktop). Both must pass before changing anything.
 3. Read `CLAUDE.md`, then `docs/STATUS.md`.
-4. Run the spike: `npm run spike -- --automation`
+4. Run the spike. The first time, when nobody is signed in yet, Andrew
+   launches `npm run spike` himself and drives it by hand: the signed-out home
+   page redirects to an `/offers/` URL that the automation guard blocks (see
+   `DECISIONS.md`, 2026-11-13). The agent does not attach to that run. Once a
+   signed-in profile exists, use `npm run spike -- --automation`.
    - Andrew signs in by hand in the window. The agent does not type
      credentials or codes (Hard rule 9).
    - Start any included title and let it run for a minute.
