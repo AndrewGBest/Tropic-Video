@@ -120,11 +120,18 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       if (trigger?.isConnected) nav.focus(trigger);
       moved = nav.move(dir);
     }
-    if (moved || (dir !== 'left' && dir !== 'right')) return;
+    if (moved) return;
     const from = nav.focused;
     if (!from) return;
-    const hit = edgeControl(from, dir === 'left' ? adapter.selectors.rowPrev : adapter.selectors.rowNext, view);
-    if (!hit) return;
+    const hit =
+      dir === 'left' || dir === 'right'
+        ? edgeControl(from, dir === 'left' ? adapter.selectors.rowPrev : adapter.selectors.rowNext, view)
+        : null;
+    if (!hit) {
+      // Nowhere to go: say so, rather than seeming not to have heard the key.
+      overlay.feedback(dir);
+      return;
+    }
     (hit.control as HTMLElement).click();
     view.clearTimeout(edgeTimer);
     edgeTimer = view.setTimeout(() => {
@@ -246,7 +253,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     lastControlKeyAt = Date.now();
     revealControls();
     if (onPlayerControl()) {
-      nav.move(dir);
+      if (!nav.move(dir)) overlay.feedback(dir);
       return;
     }
     // The controls are created and faded in after the pointer moves; wait for them.
@@ -385,6 +392,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
           nav.move('down');
           break;
         }
+        overlay.feedback('press');
         if (target && !inPlayer()) {
           hoverIfStillCollapsed(target);
           // Some controls scroll the page to another section (tabs that are

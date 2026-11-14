@@ -13,6 +13,16 @@ const CSS = `
   transition: left .09s ease-out, top .09s ease-out, width .09s ease-out, height .09s ease-out;
   display: none;
 }
+.ring.bump-left { animation: bump-left .18s ease-out; }
+.ring.bump-right { animation: bump-right .18s ease-out; }
+.ring.bump-up { animation: bump-up .18s ease-out; }
+.ring.bump-down { animation: bump-down .18s ease-out; }
+.ring.pulse { animation: pulse .16s ease-out; }
+@keyframes bump-left { 50% { transform: translateX(-1.4vh); } }
+@keyframes bump-right { 50% { transform: translateX(1.4vh); } }
+@keyframes bump-up { 50% { transform: translateY(-1.4vh); } }
+@keyframes bump-down { 50% { transform: translateY(1.4vh); } }
+@keyframes pulse { 50% { transform: scale(.96); } }
 .toast {
   position: fixed; left: 50%; bottom: 8vh; transform: translateX(-50%);
   background: rgba(16,16,16,.94); color: #fff; font: 600 3.4vh/1.3 system-ui, sans-serif;
@@ -86,6 +96,19 @@ export class Overlay {
       this.raf = view.requestAnimationFrame(step);
     };
     step();
+  }
+
+  /**
+   * A quick movement of the ring as feedback: a nudge toward an edge that
+   * cannot be passed, or a squeeze when the focused control is pressed.
+   */
+  feedback(kind: 'left' | 'right' | 'up' | 'down' | 'press'): void {
+    const name = kind === 'press' ? 'pulse' : `bump-${kind}`;
+    const classes = this.ring.classList;
+    classes.remove('bump-left', 'bump-right', 'bump-up', 'bump-down', 'pulse');
+    // Reading a layout property restarts the animation when the same one repeats.
+    void this.ring.offsetWidth;
+    classes.add(name);
   }
 
   /** Draws the on-screen keyboard with one key highlighted; `null` hides it. */

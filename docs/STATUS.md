@@ -76,6 +76,10 @@ Update this at the end of every working session.
   site's Escape handling and focus returns to what opened it. Focus follows
   when a control scrolls the page to another section.
 
+- Remote feedback: the ring bumps toward an edge that cannot be passed and
+  gives a short squeeze when the focused control is pressed. Checked in the
+  e2e run; not yet judged by eye on a TV.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |

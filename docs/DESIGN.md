@@ -106,7 +106,7 @@ What the layer draws itself, and why each is necessary:
 
 | Own UI | Why the site's interface cannot do it |
 |---|---|
-| Focus ring and focused-card growth | The site shows focus for a mouse or Tab key, not for a D-pad at a distance. |
+| Focus ring, focused-card growth, edge bump and press pulse | The site shows focus for a mouse or Tab key, not for a D-pad at a distance, and gives no sign that a key was heard when nothing can move. |
 | On-screen keyboard | A remote has no letters; without it search is unusable. |
 | Toast messages | Somewhere to say "blocked" or "saved" from the layer. |
 | "Page blocked" notice | Shown when nothing has loaded, so the window is not blank. |

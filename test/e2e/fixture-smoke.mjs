@@ -115,10 +115,26 @@ try {
   check('right walks the row', await focused(), 't3');
   await press('ArrowRight');
   check('right at the end of a row stays put', await focused(), 't3');
+  // The layer's own elements are in a closed shadow root; DevTools can still read them.
+  const ringClass = async () => {
+    const { root: tree } = await cdp.send('DOM.getDocument', { depth: -1, pierce: true });
+    const walk = (n) => {
+      const i = n.attributes?.indexOf('class') ?? -1;
+      if (i >= 0 && /\bring\b/.test(n.attributes[i + 1])) return n.attributes[i + 1];
+      for (const c of [...(n.children ?? []), ...(n.shadowRoots ?? [])]) {
+        const hit = walk(c);
+        if (hit) return hit;
+      }
+      return null;
+    };
+    return walk(tree);
+  };
+  check('and the ring bumps toward the edge as feedback', await ringClass(), 'ring bump-right');
   await press('ArrowDown');
   check('down moves to the next row', await focused(), 'u2');
   await press('Enter');
   check('select clicks the focused card', await evaluate('window.__clicks'), ['u2']);
+  check('and the ring gives a press pulse', await ringClass(), 'ring pulse');
 
   await press('ArrowDown');
   check('down reaches the nearest button', await focused(), 'rent');
