@@ -21,11 +21,11 @@ Update this at the end of every working session.
 | Picture and sound were fine in that run | Andrew's report (the spike report sees element state, not pixels) |
 | The site loads and sign-in completes in the shell | Andrew's report plus the playback above |
 | Under `--automation` a signed-out start shows a blank window | DevTools: navigation cancelled; `curl`: home redirects to `/offers/nonprimehomepage`, which the guard's URL pattern blocks |
+| With the signed-in profile, an `--automation` run loads the home page | `--dev --automation` run probed over DevTools: document on the service's home URL, `readyState` complete, about 2,300 elements; no redirect to `/offers/` |
 
 ### Still not verified after session 2
 
 - Any resolution above 960x540, and playback on bare metal.
-- Whether `--automation` runs load once signed in (guess: yes).
 - Everything else in the "NOT verified" list below except the first item and
   the sign-in and user-agent parts of the second.
 
@@ -38,10 +38,9 @@ Update this at the end of every working session.
 
 ### Next actions (replaces the list at the bottom)
 
-1. Try an `--automation` run with the signed-in profile.
-2. Show something when a navigation is blocked.
-3. Capture outlines from the live site and write adapter revision 1.
-4. TV scaling and row memory.
+1. Show something when a navigation is blocked.
+2. Capture outlines from the live site and write adapter revision 1.
+3. TV scaling and row memory.
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)
 
