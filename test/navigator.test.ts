@@ -85,3 +85,64 @@ describe('SpatialNavigator', () => {
     expect(ids(nav.candidates())).toContain('tile');
   });
 });
+
+describe('row memory', () => {
+  // Two sideways-scrolling rows and a plain grid row under them. Row A has been scrolled: its first card is off to the left.
+  const strip = (id: string, cards: string): string => `<div id="${id}" data-rect="0,0,400,60" style="overflow-x: auto">${cards}</div>`;
+  const scrollable = (id: string): void => {
+    const el = document.getElementById(id)!;
+    Object.defineProperty(el, 'scrollWidth', { value: 2000, configurable: true });
+    Object.defineProperty(el, 'clientWidth', { value: 400, configurable: true });
+  };
+
+  beforeEach(() => {
+    document.body.innerHTML =
+      strip('rowA', `${card('a0', -130, 100)}${card('a1', 0, 100)}${card('a2', 120, 100)}${card('a3', 240, 100)}`) +
+      strip('rowB', `${card('b0', 0, 200)}${card('b1', 120, 200)}${card('b2', 240, 200)}`) +
+      `<div id="grid">${card('g0', 0, 300)}${card('g1', 120, 300)}${card('g2', 240, 300)}</div>`;
+    scrollable('rowA');
+    scrollable('rowB');
+  });
+
+  it('enters a fresh row at its first item on screen', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('a3'));
+    nav.move('down');
+    expect(nav.focused?.id).toBe('b0');
+  });
+
+  it('returns to where the user was in a row', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('a3'));
+    nav.move('down');
+    nav.move('up');
+    expect(nav.focused?.id).toBe('a3');
+    nav.move('down');
+    nav.move('right');
+    nav.move('right');
+    nav.move('up');
+    nav.move('down');
+    expect(nav.focused?.id).toBe('b2');
+  });
+
+  it('never enters a row at an item scrolled off its left edge', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('b0'));
+    nav.move('up');
+    expect(nav.focused?.id).toBe('a1');
+  });
+
+  it('leaves plain grids geometric', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('b2'));
+    nav.move('down');
+    expect(nav.focused?.id).toBe('g2');
+  });
+
+  it('does not interfere with sideways movement inside a row', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('a1'));
+    nav.move('right');
+    expect(nav.focused?.id).toBe('a2');
+  });
+});
