@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Tropic Video icon. Original artwork for this project: a sun setting behind a
+       leaf that doubles as a play mark. Not derived from any service's branding. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b1a4a"/>
+      <stop offset="0.6" stop-color="#b8405e"/>
+      <stop offset="1" stop-color="#f2a65a"/>
+    </linearGradient>
+    <clipPath id="tile"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="url(#sky)"/>
+    <circle cx="256" cy="330" r="150" fill="#ffd27d"/>
+    <rect y="392" width="512" height="120" fill="#12303a"/>
+    <!-- leaf: a rounded play triangle with a midrib and veins -->
+    <path d="M186 128 C186 104 210 92 230 104 L392 228 C410 242 410 270 392 284 L230 408 C210 420 186 408 186 384 Z" fill="#0f5c4d"/>
+    <path d="M196 256 H392" stroke="#7fd1a8" stroke-width="12" stroke-linecap="round"/>
+    <path d="M236 256 L210 176 M286 256 L262 190 M336 256 L318 214 M236 256 L210 336 M286 256 L262 322 M336 256 L318 298"
+          stroke="#7fd1a8" stroke-width="9" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>

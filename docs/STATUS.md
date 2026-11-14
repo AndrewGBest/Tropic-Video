@@ -34,6 +34,9 @@ Update this at the end of every working session.
 - Row memory: entering a sideways-scrolling row goes to where you last were in
   it, or to its first card on screen.
 
+- Packaging: an original icon (`assets/icon.svg`, rendered to `icon.png`) and
+  a desktop name, so the AppImage no longer carries Electron's default icon.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -56,8 +59,15 @@ Update this at the end of every working session.
 | Up/down in the player reveal the site's controls and focus them; arrows walk both control rows; Enter activates (tested on mute) | later run, focus position read after each key, four reveals out of four |
 | Row memory on the live home page | run at `--zoom=1.25`: fresh row entered at its first card, earlier rows re-entered at the remembered card |
 | Zoom applies and the ring, player controls and Back still line up | same run: viewport 1024x576, screenshot looked at, player controls focused, Back stayed on the title page |
+| The AppImage builds and runs | `npm run dist`, then launched with a throwaway profile under `--spike --automation`: Widevine component fetched at run time, notice page shown; the unpacked build contains no CDM |
+| CI runs on GitHub | `gh run list`: check and e2e green on each push to `main` |
 
 ### Still not verified after session 2
+
+- The packaged build signed in and playing (it uses a different profile folder
+  from the dev build, so Andrew would need to sign in to it once).
+- The release workflow (never run), the tarball, and how the icon looks in a
+  desktop launcher.
 
 - Automatic zoom on a real 1080p or 4K screen (only the override was run, in a
   1280x720 window).
@@ -88,7 +98,7 @@ Update this at the end of every working session.
 
 1. Walk the player's subtitle and audio menus; next-episode and skip prompts.
 2. The home page's top carousel; profile picker and sign-in pages with a remote.
-3. Packaging: build and launch an AppImage; let CI run on GitHub.
+3. First release: Andrew signs in to the packaged build and tags a version.
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)
 

@@ -45,7 +45,9 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "assets/icon.png",
+      "syncDesktopName": true
     },
     "directories": {
       "output": "release"
@@ -60,5 +62,6 @@
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
-  "author": "Tropic Video contributors"
+  "author": "Tropic Video contributors",
+  "desktopName": "io.github.andrewgbest.TropicVideo.desktop"
 }
