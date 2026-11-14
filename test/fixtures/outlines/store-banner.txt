@@ -1,0 +1,9 @@
+# Trimmed from an outline of the live site's Store page, captured 2026-11-14 (signed in):
+# the action box of a banner slide, whose button starts a purchase or rental.
+# Structure only; checked by eye for names and titles.
+div.imzVmU.XZjb4R.sQqF2N[data-testid="action-box"]
+  button._1jWggM.bJmKgG.fbl-btn._2KSX1z._2sxYvx[data-testid="checkout-button"][data-automation-id="checkout-button"]
+    span._36qUej{text:10}
+      span.dv-conditional-linebreak
+        br
+      strong{text:3}

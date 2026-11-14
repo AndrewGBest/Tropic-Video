@@ -73,6 +73,16 @@ describe('the adapter is backed by outlines', () => {
     }
   });
 
+  it('purchase controls: the Store banner button is guarded whatever its wording', () => {
+    const dom = fromOutline('store-banner.txt');
+    document.body.replaceChildren(dom);
+    const button = dom.querySelector(adapter.selectors.purchaseControls[1]!);
+    expect(button?.tagName).toBe('BUTTON');
+    // Judged by the selector alone: the fixture's text is only filler of the right length.
+    expect(isSpendControl(button!.querySelector('strong')!, [])).toBe(false);
+    expect(isSpendControl(button!.querySelector('strong')!, adapter.selectors.purchaseControls)).toBe(true);
+  });
+
   it('player root: holds no video before playback and the player video during it; the trailer is outside', () => {
     const sel = adapter.selectors.playerRoot[0]!;
     const before = fromOutline('detail-before-play.txt');

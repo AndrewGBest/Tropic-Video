@@ -67,6 +67,11 @@ Update this at the end of every working session.
 - A made-up player page (`test/fixtures/player.html`) now covers player
   control in the e2e run. It exposed and fixed two focus races.
 
+- Remote coverage walk of the live site (title page, home, Movies, Live TV,
+  Store), which led to: episodes reachable; one focus target per spot; rows
+  must be strips; up/down prefer page content over pinned bars. Adapter
+  revision 3 guards the Store banner's checkout button.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -100,8 +105,14 @@ Update this at the end of every working session.
 | The profile menu opens, is walkable and closes from the remote | live site: Enter expanded it, down moved through its entries, Back hid it. No profile was switched |
 | Search from the remote, end to end | live site: search key, letters, space and delete typed with the on-screen keyboard, its search key loaded the results page, arrows moved through the results grid; also e2e on the fixture |
 | Navigation bar dropdowns from the remote | live site: Enter on a link that carries a menu opened the menu instead of following the link; down and up walked its entries; left closed it and moved to the next item; Enter on an entry loaded its page. Back returned focus to the profile button |
+| Title page walks down and back up through every section, episodes included | live site, focus recorded after each key: banner buttons, tabs, each episode, related rows, details links, footer, and the same path back up |
+| Home, Movies, Live TV and Store pages have no traps for up/down | live site, nine to sixteen Down presses each; focus always moved and was on screen |
 
 ### Still not verified after session 2
+
+- Remote coverage still to walk: search results in depth, My Stuff, a
+  collection page, a movie's title page, the season selector, Live TV
+  playback, the Related and Details tabs, and every page's left/right edges.
 
 - Sign-in pages with a remote. An agent-driven run must use `--automation`,
   which blocks the signed-out landing page, so only Andrew can try these.

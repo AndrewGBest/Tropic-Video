@@ -1,9 +1,9 @@
 {
   "id": "primevideo",
   "schema": 1,
-  "revision": 2,
+  "revision": 3,
   "verified": true,
-  "note": "No selector in this file may be added without a diagnostics outline from the live site that shows it. Evidence is in test/fixtures/outlines/ (captured 2026-11-13) and is checked by test/adapter-evidence.test.ts. playerClose and extraFocusable are empty: the generic heuristics and the site's own Escape handling are in use.",
+  "note": "No selector in this file may be added without a diagnostics outline from the live site that shows it. Evidence is in test/fixtures/outlines/ (captured 2026-11-13 and 2026-11-14) and is checked by test/adapter-evidence.test.ts. playerClose and extraFocusable are empty: the generic heuristics and the site's own Escape handling are in use.",
   "selectors": {
     "extraFocusable": [],
     "searchInput": [
@@ -23,7 +23,8 @@
     ],
     "playerClose": [],
     "purchaseControls": [
-      ".dv-signup-button"
+      ".dv-signup-button",
+      "[data-testid=\"checkout-button\"]"
     ]
   }
 }
