@@ -8,12 +8,12 @@ export const NOTICE =
 export const HELP: readonly (readonly [string, string])[] = [
   ['Arrows or D-pad', 'Move'],
   ['Enter or A', 'Select; play or pause in the player'],
-  ['Backspace, Escape or B', 'Back'],
+  ['Backspace, Escape, Back or B', 'Back'],
   ['Up or Down in the player', "Show the player's controls"],
   ['Space or X', 'Play or pause'],
   ['Left, Right, LB or RB in the player', 'Skip back or forward'],
   ['/ or Y', 'Search'],
-  ['Ctrl+O or right stick click', 'This panel'],
+  ['Ctrl+O, Menu, Info or right stick click', 'This panel'],
   ['Ctrl+Q', 'Quit'],
 ];
 

@@ -81,9 +81,17 @@ export function keyToAction(e: KeyLike, mode: Mode, overrides: Readonly<Record<s
     case 'Backspace':
     case 'Escape':
     case 'BrowserBack':
+    case 'GoBack':
+    case 'MediaStop':
       return { type: 'back' };
     case '/':
+    case 'BrowserSearch':
       return { type: 'search' };
+    // Menu, info and help buttons on remotes and media keyboards.
+    case 'ContextMenu':
+    case 'Info':
+    case 'Help':
+      return { type: 'settings' };
     default:
       return null;
   }

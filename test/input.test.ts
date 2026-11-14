@@ -21,6 +21,13 @@ describe('keyToAction', () => {
     expect(keyToAction({ key: 'ArrowUp' }, 'player')).toEqual({ type: 'move', dir: 'up' });
   });
 
+  it('knows the usual remote and media-keyboard buttons', () => {
+    for (const key of ['GoBack', 'MediaStop', 'BrowserBack']) expect(keyToAction({ key }, 'player')).toEqual({ type: 'back' });
+    expect(keyToAction({ key: 'BrowserSearch' }, 'browse')).toEqual({ type: 'search' });
+    for (const key of ['ContextMenu', 'Info', 'Help']) expect(keyToAction({ key }, 'browse')).toEqual({ type: 'settings' });
+    expect(keyToAction({ key: 'MediaPlayPause' }, 'browse')).toEqual({ type: 'playPause' });
+  });
+
   it('leaves typing alone in text mode', () => {
     expect(keyToAction({ key: 'a' }, 'text')).toBeNull();
     expect(keyToAction({ key: ' ' }, 'text')).toBeNull();
