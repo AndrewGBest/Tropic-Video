@@ -21,8 +21,8 @@ A small Chromium-based app that opens the service's normal website and makes
 it work from the couch. The interface you see is the service's own, enlarged
 for a TV. The app adds what a remote needs:
 
-- directional movement with a visible focus ring, through every page, menu,
-  pop-up and the player's own controls;
+- directional movement with a visible focus ring, through the site's pages,
+  menus, pop-ups and the player's own controls;
 - an on-screen keyboard for search;
 - play, pause and seek from the remote, sent to the site's player as ordinary
   key presses.

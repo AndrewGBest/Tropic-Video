@@ -131,6 +131,7 @@ Update this at the end of every working session.
 | Season selector from the remote | live site, a multi-season title: Down reached the selector, Enter showed seven season links, Down moved onto one, Back closed the list and focus returned to the selector. No season was switched |
 | A collection grid walks in all four directions | live site: column kept going down, edges stop, more cards load as you go |
 | Live TV from the remote | live site: a station's pop-up, its play button, the live player's controls, and Back to the pop-up. Space did not pause the live stream (the site's choice, not checked further) |
+| Packages build in CI | "Build packages" workflow run on GitHub: check, e2e and electron-builder all green, artifact `tropic-video-linux-x64` produced (AppImage and tarball). The artifact itself was not downloaded and run |
 
 ### Still not verified after session 2
 
@@ -143,8 +144,9 @@ Update this at the end of every working session.
 
 - The packaged build signed in and playing (it uses a different profile folder
   from the dev build, so Andrew would need to sign in to it once).
-- The release workflow (never run), the tarball, and how the icon looks in a
-  desktop launcher.
+- The release workflow's last step (creating the draft release on a tag). Its
+  build steps are the same as the "Build packages" workflow, which passes.
+  Also the tarball, and how the icon looks in a desktop launcher.
 
 - Automatic zoom on a real 1080p or 4K screen. It was run fullscreen on this
   VM's 1280x800 display (zoom 1.33, viewport 962x601, full navigation bar).

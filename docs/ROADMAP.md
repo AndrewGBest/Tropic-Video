@@ -53,7 +53,7 @@ how in `STATUS.md`.
 
 ## Phase 4: packaging and release
 
-- [ ] AppImage and tarball build verified
+- [x] AppImage build verified locally and in CI (tarball built, not run)
 - [ ] Flatpak bundle file attached to GitHub releases (not Flathub; see `DECISIONS.md`)
 - [ ] Release workflow on tag
 - [ ] README install guide, screenshots that show no third-party artwork
