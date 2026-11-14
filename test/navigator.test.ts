@@ -132,6 +132,19 @@ describe('row memory', () => {
     expect(nav.focused?.id).toBe('a1');
   });
 
+  it('does not take a page-sized clipping container for a row', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 540, configurable: true });
+    document.body.innerHTML = `<div id="pageBox" style="overflow-x: hidden">${card('top', 0, 0)}${card('g0', 0, 300)}${card('g1', 240, 300)}${card('below', 240, 400)}</div>`;
+    const box = document.getElementById('pageBox')!;
+    Object.defineProperty(box, 'scrollWidth', { value: 2000, configurable: true });
+    Object.defineProperty(box, 'clientWidth', { value: 960, configurable: true });
+    Object.defineProperty(box, 'clientHeight', { value: 2600, configurable: true });
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('below'));
+    nav.move('up');
+    expect(nav.focused?.id).toBe('g1');
+  });
+
   it('leaves plain grids geometric', () => {
     const nav = new SpatialNavigator(document);
     nav.focus(document.getElementById('b2'));
@@ -291,5 +304,59 @@ describe('styled radios and checkboxes', () => {
     const nav = new SpatialNavigator(document);
     nav.focusNearest({ x: 700, y: 150 });
     expect(nav.focused?.id).toBe('optB');
+  });
+});
+
+describe('transparent hit areas', () => {
+  it('keeps one target where a link and a transparent button share a box', () => {
+    document.body.innerHTML = `
+      <div><a href="#" id="cardLink" data-rect="10,10,217,122">x</a><button id="ghostButton" style="opacity: 0" data-rect="10,11,217,122">x</button></div>
+      <div><button id="onlyGhost" style="opacity: 0" data-rect="300,10,217,122">x</button></div>`;
+    const nav = new SpatialNavigator(document);
+    expect(ids(nav.candidates())).toEqual(['cardLink', 'onlyGhost']);
+  });
+
+  it('focuses a picture-sized transparent link, but not transparent inputs, small ones or ones in a hidden container', () => {
+    document.body.innerHTML = `
+      <a href="#" id="overlay" style="opacity: 0" data-rect="0,0,275,155">x</a>
+      <a href="#" id="hoverOnly" style="opacity: 0; pointer-events: none" data-rect="0,200,275,155">x</a>
+      <a href="#" id="speck" style="opacity: 0" data-rect="300,0,30,30">x</a>
+      <input id="ghost" type="checkbox" style="opacity: 0" data-rect="300,200,40,40">
+      <div style="opacity: 0"><a href="#" id="inHidden" data-rect="0,400,275,155">x</a></div>`;
+    const nav = new SpatialNavigator(document);
+    expect(ids(nav.candidates())).toEqual(['hoverOnly', 'overlay']);
+  });
+});
+
+describe('pinned bars', () => {
+  // The page has scrolled: a sticky tab strip sits at the top of the screen, and the row above is partly off screen.
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div style="position: sticky">${card('tab', 40, 60)}</div>
+      ${card('rowAbove', 40, -30)}
+      ${card('here', 40, 240)}
+      ${card('rowBelow', 40, 400)}`;
+  });
+
+  it('goes to page content above rather than the pinned bar', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('here'));
+    nav.move('up');
+    expect(nav.focused?.id).toBe('rowAbove');
+  });
+
+  it('reaches the pinned bar when no page content is left above', () => {
+    document.getElementById('rowAbove')!.remove();
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('here'));
+    nav.move('up');
+    expect(nav.focused?.id).toBe('tab');
+  });
+
+  it('leaves the pinned bar normally', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('tab'));
+    nav.move('down');
+    expect(nav.focused?.id).toBe('here');
   });
 });

@@ -65,7 +65,16 @@ export function isVisible(el: Element, view: Window): boolean {
   const r = el.getBoundingClientRect();
   if (r.width < 4 || r.height < 4) return false;
   const style = view.getComputedStyle(el);
-  if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') return false;
+  if (style.visibility === 'hidden' || style.display === 'none') return false;
+  if (style.opacity === '0') {
+    // A transparent link or button laid over a picture is a hit area, not a
+    // hidden control. Seen on the live site: each episode's play link is
+    // invisible over its thumbnail, and ignores the pointer, until the
+    // thumbnail is hovered; activating it directly still works. Only
+    // picture-sized ones count; small transparent controls stay hidden.
+    const hitArea = el.matches('a[href], button, [role="button"], [role="link"]');
+    if (!hitArea || r.width < 48 || r.height < 48) return false;
+  }
   if (el.closest('[aria-hidden="true"], [inert]')) return false;
   // Opacity is not inherited in the computed style, but a transparent ancestor
   // hides everything in it. Seen on the live site: the slides of a carousel
@@ -111,9 +120,36 @@ export function edgeControl(from: Element, selectors: readonly string[], view: W
 export function rowOf(el: Element, view: Window): Element | null {
   let node = el.parentElement;
   for (let i = 0; node && i < 8; i++, node = node.parentElement) {
+    // A strip, not a page: on the live site a page-sized container also
+    // clips sideways, and taking it for a row sent focus to the top of the page.
+    if (node.clientHeight > view.innerHeight * 0.9) return null;
     if (node.scrollWidth > node.clientWidth + 8 && view.getComputedStyle(node).overflowX !== 'visible') return node;
   }
   return null;
+}
+
+/**
+ * True for controls in a bar that stays put while the page scrolls (a fixed
+ * or sticky header, a pinned tab strip). `cache` avoids restyling shared ancestors.
+ */
+export function isPinned(el: Element, view: Window, cache: Map<Element, boolean> = new Map()): boolean {
+  const path: Element[] = [];
+  let pinned = false;
+  for (let node: Element | null = el; node && node !== el.ownerDocument.body; node = node.parentElement) {
+    const known = cache.get(node);
+    if (known !== undefined) {
+      pinned = known;
+      break;
+    }
+    path.push(node);
+    const position = view.getComputedStyle(node).position;
+    if (position === 'fixed' || position === 'sticky') {
+      pinned = true;
+      break;
+    }
+  }
+  for (const node of path) cache.set(node, pinned);
+  return pinned;
 }
 
 /** True when `outer` wholly contains `inner` and is at least four times its area. */
@@ -164,7 +200,19 @@ export class SpatialNavigator {
     // banner's real buttons lying on top of it. Seen on the live site, where
     // such a link swallowed sideways movement.
     const rects = inner.map(toRect);
-    return inner.filter((_, i) => !rects.some((other, j) => j !== i && covers(rects[i]!, other)));
+    const front = inner.filter((_, i) => !rects.some((other, j) => j !== i && covers(rects[i]!, other)));
+    // One target per spot: when several controls occupy the same box (a card's
+    // link and a transparent button over it), keep the one that can be seen,
+    // and a link before anything else.
+    const bySpot = new Map<string, Element>();
+    const rank = (el: Element): number => (view.getComputedStyle(el).opacity === '0' ? 0 : 2) + (el.matches('a[href]') ? 1 : 0);
+    for (const el of front) {
+      const r = el.getBoundingClientRect();
+      const spot = [r.left, r.top, r.right, r.bottom].map((v) => Math.round(v / 6)).join(',');
+      const held = bySpot.get(spot);
+      if (!held || rank(el) > rank(held)) bySpot.set(spot, el);
+    }
+    return front.filter((el) => [...bySpot.values()].includes(el));
   }
 
   private skipSelector(): string | null {
@@ -207,7 +255,19 @@ export class SpatialNavigator {
       const i = pickInitial(all.map(toRect));
       return this.focus(all[i] ?? null);
     }
-    const others = all.filter((el) => el !== from);
+    let others = all.filter((el) => el !== from);
+    const view = this.doc.defaultView;
+    // Up and down follow the page. A bar pinned to the screen is always
+    // "nearest" once the page has scrolled under it, and focusing it jumps
+    // the page back to where the bar lives; so from page content it is only
+    // a target when there is no page content left in that direction.
+    if (view && (dir === 'up' || dir === 'down')) {
+      const cache = new Map<Element, boolean>();
+      if (!isPinned(from, view, cache)) {
+        const flowing = others.filter((el) => !isPinned(el, view, cache));
+        if (pickNext(toRect(from), flowing.map(toRect), dir) !== -1) others = flowing;
+      }
+    }
     const i = pickNext(toRect(from), others.map(toRect), dir);
     if (i === -1) return false;
     let target = others[i] ?? null;
