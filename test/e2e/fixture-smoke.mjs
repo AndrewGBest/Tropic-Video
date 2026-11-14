@@ -24,6 +24,7 @@ const child = spawn(
     root,
     '--dev',
     '--automation',
+    '--zoom=1',
     `--url=${fixture}`,
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${userData}`,
@@ -194,6 +195,8 @@ try {
       root,
       '--dev',
       '--automation',
+      '--zoom=1',
+    '--zoom=1',
       `--url=http://127.0.0.1:${server.address().port}/`,
       `--remote-debugging-port=${port2}`,
       `--user-data-dir=${userData2}`,
@@ -218,7 +221,13 @@ try {
     check('a blocked start page is replaced by a notice page', !!page, true);
     if (page) {
       const cdp = await connect(page.webSocketDebuggerUrl);
-      const text = (await cdp.send('Runtime.evaluate', { expression: 'document.body.innerText', returnByValue: true })).result.value;
+      // The target can be listed before the page has rendered; wait for its text.
+      let text = '';
+      for (let i = 0; i < 50 && !text; i++) {
+        const r = await cdp.send('Runtime.evaluate', { expression: 'document.body?.innerText ?? ""', returnByValue: true });
+        text = typeof r.result.value === 'string' ? r.result.value : '';
+        if (!text) await sleep(100);
+      }
       check(
         'the notice names the blocked address, the cause and the way out, and no query',
         [text.includes('/offers/landing'), text.includes('--automation'), text.includes('Ctrl+Q'), text.includes('SECRET')],
