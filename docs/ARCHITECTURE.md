@@ -36,8 +36,12 @@ Every device is reduced to an `Action` (`src/shared/actions.ts`) by a pure
 mapping function that takes the current mode:
 
 - `browse`: arrows move focus, select clicks.
-- `player`: left/right seek, select toggles play. Active when a video fills at
-  least half the viewport and has started.
+- `player`: left/right seek, select toggles play. Active when the player's
+  video fills at least half the viewport and has started. The adapter's
+  `playerRoot` says where the player lives; without it, the largest unmuted
+  video is used. The layer never calls `play()`, `pause()` or sets
+  `currentTime`: it asks the shell to press Space, Left or Right, and the
+  site's own player acts on the key (see `src/shared/player-keys.ts`).
 - `text`: a text field has focus, so only Escape and up/down are intercepted.
 
 ## Spatial navigation (`src/layer/spatial`)

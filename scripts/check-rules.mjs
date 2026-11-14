@@ -26,6 +26,7 @@ const CODE_CHECKS = [
   [3, /SMART-TV|SmartTV|Tizen|Web0S|webOS|BRAVIA|AFT[A-Z]|Android TV|PlayStation|Xbox|Cobalt\/|Windows NT|Macintosh|CrOS/, 'looks like a spoofed device or OS identity'],
   // Rule 4
   [4, /onBeforeSendHeaders|onHeadersReceived|onBeforeRequest|interceptBuffer|registerHttpProtocol|setProxy|adblock|ad-?block|skipAd|sponsorblock/i, 'modifies or filters the service\'s traffic'],
+  [4, /\.(currentTime|playbackRate)\s*[-+]?=(?!=)|\.(play|pause)\(\)/, 'controls the site\'s video element directly instead of sending input'],
   // Rule 11
   [11, /sentry|google-analytics|gtag\(|posthog|mixpanel|crashReporter\.start/i, 'telemetry or crash upload'],
   // Rule 12

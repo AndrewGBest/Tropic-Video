@@ -1,3 +1,5 @@
+import type { PlayerKey } from './player-keys';
+
 // Every input device is reduced to one of these actions before anything else
 // sees it. Adding a device means writing a mapper to Action, nothing more.
 export type Direction = 'up' | 'down' | 'left' | 'right';
@@ -19,6 +21,7 @@ export type ActionType = Action['type'];
 export type BridgeMessage =
   | { kind: 'exit' }
   | { kind: 'playback'; playing: boolean }
+  | { kind: 'playerKey'; key: PlayerKey }
   | { kind: 'diagnostics'; outline: string; url: string }
   | { kind: 'spike'; event: SpikeEvent };
 

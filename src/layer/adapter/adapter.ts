@@ -10,12 +10,16 @@ export interface SiteAdapter {
   selectors: {
     extraFocusable: string[];
     searchInput: string[];
+    /** Controls that reveal the search input when it is hidden. */
+    searchOpen: string[];
+    /** Elements the site's player lives in; see findMainVideo. */
+    playerRoot: string[];
     playerClose: string[];
     purchaseControls: string[];
   };
 }
 
-const KEYS = ['extraFocusable', 'searchInput', 'playerClose', 'purchaseControls'] as const;
+const KEYS = ['extraFocusable', 'searchInput', 'searchOpen', 'playerRoot', 'playerClose', 'purchaseControls'] as const;
 
 export function emptyAdapter(): SiteAdapter {
   return {
@@ -23,7 +27,7 @@ export function emptyAdapter(): SiteAdapter {
     schema: 1,
     revision: 0,
     verified: false,
-    selectors: { extraFocusable: [], searchInput: [], playerClose: [], purchaseControls: [] },
+    selectors: { extraFocusable: [], searchInput: [], searchOpen: [], playerRoot: [], playerClose: [], purchaseControls: [] },
   };
 }
 

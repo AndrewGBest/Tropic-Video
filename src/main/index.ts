@@ -4,6 +4,7 @@ import * as electron from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { BridgeMessage, LayerOptions, SpikeEvent } from '../shared/actions';
+import { playerKeyInfo } from '../shared/player-keys';
 import { browserUserAgent, isAllowedUrl } from './hosts';
 import { blockReason, blockedMessage, describeBlockedUrl, noticePageUrl } from './navigation';
 
@@ -147,6 +148,15 @@ function wireMessages(): void {
       case 'exit':
         app.quit();
         break;
+      case 'playerKey': {
+        // An ordinary key press, delivered to the page like one from a keyboard.
+        const info = playerKeyInfo(msg.key);
+        if (info) {
+          event.sender.sendInputEvent({ type: 'keyDown', keyCode: info.code });
+          event.sender.sendInputEvent({ type: 'keyUp', keyCode: info.code });
+        }
+        break;
+      }
       case 'playback':
         if (msg.playing && blocker === undefined) {
           blocker = powerSaveBlocker.start('prevent-display-sleep');

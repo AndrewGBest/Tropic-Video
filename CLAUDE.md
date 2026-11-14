@@ -27,7 +27,8 @@ The reasoning for each is in `docs/LEGAL-GUARDRAILS.md`.
 4. **Do not modify the service's own behaviour.** No ad blocking or ad
    skipping, no region or VPN workarounds, no rewriting of the site's requests,
    responses, headers or scripts. The layer adds its own UI and sends ordinary
-   input; that is all.
+   input; that is all. It never calls `play()`, `pause()` or sets `currentTime`
+   on the site's video: the site's player decides what a key press does.
 5. **No trademarks in the name, app ID, icon or artwork.** "Prime", "Amazon"
    and their logos stay out. Plain-text descriptions of compatibility are fine,
    always with the non-affiliation notice.

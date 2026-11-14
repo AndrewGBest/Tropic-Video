@@ -26,7 +26,7 @@ export interface NavigatorOptions {
   onFocusChange?: (el: Element | null) => void;
 }
 
-function isVisible(el: Element, view: Window): boolean {
+export function isVisible(el: Element, view: Window): boolean {
   const r = el.getBoundingClientRect();
   if (r.width < 4 || r.height < 4) return false;
   const style = view.getComputedStyle(el);
