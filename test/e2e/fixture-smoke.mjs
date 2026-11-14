@@ -133,6 +133,12 @@ try {
   const ua = await evaluate('navigator.userAgent');
   check('user agent hides nothing but the app tokens', /Electron|tropic-video/i.test(ua) === false && /Linux/.test(ua) && /Chrome\//.test(ua), true);
 
+  // Quit is handled by the main process, so it must work whatever the page is doing.
+  const exited = new Promise((resolve) => child.once('exit', () => resolve(true)));
+  const q = { key: 'q', code: 'KeyQ', windowsVirtualKeyCode: 81, nativeVirtualKeyCode: 81, modifiers: 2 };
+  await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...q }).catch(() => undefined);
+  check('Ctrl+Q quits the app', await Promise.race([exited, sleep(4000).then(() => false)]), true);
+
   cdp.close();
 } catch (err) {
   failures += 1;

@@ -61,7 +61,8 @@ function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
-    fullscreen: flag('fullscreen') || !options.dev,
+    // The spike is a diagnostic run: keep it windowed so the desktop stays reachable.
+    fullscreen: flag('fullscreen') || (!options.dev && !options.spike),
     backgroundColor: '#000000',
     autoHideMenuBar: true,
     title: 'Tropic Video',
@@ -77,6 +78,21 @@ function createWindow(): BrowserWindow {
   win.removeMenu();
 
   const wc = win.webContents;
+
+  // Quit must work even when the page never loads and the layer is not
+  // running, otherwise a fullscreen window with a blank page traps the user.
+  wc.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.control && !input.alt && !input.meta && input.key.toLowerCase() === 'q') {
+      event.preventDefault();
+      app.quit();
+    }
+  });
+  wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
+    if (isMainFrame) console.error(`[tropic-video] page failed to load (${code} ${description}): ${url}`);
+  });
+  wc.on('render-process-gone', (_e, details) => {
+    console.error(`[tropic-video] renderer exited: ${details.reason}`);
+  });
   const allowed = (url: string): boolean => {
     if (!isAllowedUrl(url, { dev: options.dev })) return false;
     // Automation must never reach a payment or sign-up flow, even by URL.

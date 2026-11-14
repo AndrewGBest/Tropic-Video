@@ -15,6 +15,17 @@ Update this at the end of every working session.
   browser. This is his report, not something checked from this workspace, and
   it says nothing yet about the castLabs Electron shell.
 
+### First VM run (reported by Andrew)
+
+- Running the spike turned the VM's screen black and keys did nothing. Most
+  likely cause, not confirmed: the spike opened fullscreen with a black
+  background and the page did not render, and Ctrl+Q was handled only by the
+  page-side layer, so there was no way out.
+- Fixed: the spike now runs windowed, Ctrl+Q is handled in the main process,
+  and page-load failures and renderer exits are logged to the terminal.
+- Still unknown: why the page was blank. Suspect GPU compositing in the VM;
+  try `--disable-gpu`.
+
 ### Built
 
 - Project scaffold: TypeScript, esbuild, vitest, castLabs Electron 44.10.1.
