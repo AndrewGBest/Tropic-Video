@@ -47,6 +47,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const inPlayer = (): boolean => isPlayerActive(doc, playerRoots);
   /** While the player is open, focus stays among its own controls. */
   const scope = (): Element | null => {
+    // An open hover menu lies over the page; what is underneath is not reachable until it is closed.
+    if (hoverHost?.isConnected) return hoverHost;
     if (!inPlayer()) return null;
     const v = findMainVideo(doc, playerRoots);
     return v ? playerScope(v, playerRoots) : null;
@@ -77,26 +79,44 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     ignorePointerUntil = Date.now() + 500;
     send({ kind: 'hover', x: 1, y: 1 });
   };
+  const hoverOn = (target: Element): void => {
+    const r = target.getBoundingClientRect();
+    hoverHost = target.parentElement ?? target;
+    hoverTrigger = target;
+    ignorePointerUntil = Date.now() + 500;
+    send({ kind: 'hover', x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
+  };
   const hoverIfStillCollapsed = (target: Element): void => {
     if (target.getAttribute('aria-expanded') !== 'false') return;
+    const page = view.location.href;
     view.clearTimeout(hoverTimer);
     hoverTimer = view.setTimeout(() => {
-      if (!target.isConnected || target.getAttribute('aria-expanded') !== 'false') return;
-      const r = target.getBoundingClientRect();
-      hoverHost = target.parentElement ?? target;
-      hoverTrigger = target;
-      ignorePointerUntil = Date.now() + 500;
-      send({ kind: 'hover', x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
+      // Not if the click went somewhere: the menu belongs to the page that was left.
+      if (view.location.href !== page) return;
+      if (target.isConnected && target.getAttribute('aria-expanded') === 'false') hoverOn(target);
     }, 300);
   };
+  /**
+   * A link that is also the button of a collapsed menu: Enter opens the menu
+   * instead of following the link, so the menu's entries can be reached. The
+   * menu is open after that, and Enter on the link follows it as usual.
+   */
+  const opensMenuFirst = (target: Element): boolean =>
+    target instanceof HTMLAnchorElement && target.getAttribute('aria-expanded') === 'false' && hoverHost === null;
 
   // Left or right with nowhere to go: press the strip's own arrow, if the
   // adapter knows it. A carousel that swaps slides leaves focus on something
   // no longer shown, so focus then moves to the new slide.
   let edgeTimer: number | undefined;
   const moveInPage = (dir: Direction): void => {
-    const moved = nav.move(dir);
-    if (hoverHost && nav.focused && !hoverHost.contains(nav.focused)) unhover();
+    let moved = nav.move(dir);
+    // Sideways out of an open menu: close it and carry on along the bar.
+    if (!moved && hoverHost && (dir === 'left' || dir === 'right')) {
+      const trigger = hoverTrigger;
+      unhover();
+      if (trigger?.isConnected) nav.focus(trigger);
+      moved = nav.move(dir);
+    }
     if (moved || (dir !== 'left' && dir !== 'right')) return;
     const from = nav.focused;
     if (!from) return;
@@ -317,6 +337,10 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
         lastControlKeyAt = Date.now();
         const target = nav.focused;
         const box = target?.getBoundingClientRect();
+        if (target && !inPlayer() && opensMenuFirst(target)) {
+          hoverOn(target);
+          break;
+        }
         if (!nav.activate()) {
           nav.move('down');
           break;

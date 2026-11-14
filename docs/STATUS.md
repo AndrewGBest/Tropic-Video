@@ -94,12 +94,13 @@ Update this at the end of every working session.
 | Back with a player menu open | live site: first Back leaves the controls, second closes the menu, third closes the player and stays on the title page |
 | The profile menu opens, is walkable and closes from the remote | live site: Enter expanded it, down moved through its entries, Back hid it. No profile was switched |
 | Search from the remote, end to end | live site: search key, letters, space and delete typed with the on-screen keyboard, its search key loaded the results page, arrows moved through the results grid; also e2e on the fixture |
+| Navigation bar dropdowns from the remote | live site: Enter on a link that carries a menu opened the menu instead of following the link; down and up walked its entries; left closed it and moved to the next item; Enter on an entry loaded its page. Back returned focus to the profile button |
 
 ### Still not verified after session 2
 
 - Sign-in pages with a remote. An agent-driven run must use `--automation`,
   which blocks the signed-out landing page, so only Andrew can try these.
-- Switching profile, and the other navigation dropdowns (same mechanism, not run).
+- Switching profile.
 
 - The packaged build signed in and playing (it uses a different profile folder
   from the dev build, so Andrew would need to sign in to it once).
