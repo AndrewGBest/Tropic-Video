@@ -1,0 +1,32 @@
+# Builds the Linux packages on request and keeps them as a workflow artifact,
+# so a build can be tried without publishing a release. Start it from the
+# Actions tab ("Run workflow") or with `gh workflow run build.yml`.
+name: Build packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: xvfb-run -a npm run e2e
+      - run: npx electron-builder --linux --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tropic-video-linux-x64
+          path: |
+            release/*.AppImage
+            release/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14

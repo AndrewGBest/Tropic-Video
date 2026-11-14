@@ -87,6 +87,9 @@ Update this at the end of every working session.
   required non-affiliation notice, the version and the remote's keys. A test
   keeps its wording identical to the guardrails and the README.
 
+- README brought up to date; a "Build packages" workflow builds the AppImage
+  and tarball on request and keeps them as an artifact, without a release.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |

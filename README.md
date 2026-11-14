@@ -3,8 +3,11 @@
 An unofficial TV-style front end for watching Prime Video on a Linux HTPC,
 driven by a game controller, remote or keyboard.
 
-**Status: early development. Not usable yet.** Protected playback has not been
-confirmed in this shell. See [docs/STATUS.md](docs/STATUS.md).
+**Status: early development, usable for testing.** Browsing, search, playback
+and the player's controls work from a keyboard-style remote on the one setup
+tried so far (a Fedora virtual machine). It has not been tried on a real TV or
+with a physical game controller, and there is no published release yet. See
+[docs/STATUS.md](docs/STATUS.md) for exactly what has and has not been checked.
 
 > Tropic Video is an unofficial, independent project. It is not affiliated
 > with, endorsed by or supported by Amazon. Prime Video and Amazon are
@@ -14,10 +17,18 @@ confirmed in this shell. See [docs/STATUS.md](docs/STATUS.md).
 
 ## What it is
 
-A small Chromium-based app that opens the service's normal website and adds a
-couch-friendly layer on top: directional focus, a visible focus ring, and
-controller and remote input. You sign in on the service's own page, exactly as
-in a browser.
+A small Chromium-based app that opens the service's normal website and makes
+it work from the couch. The interface you see is the service's own, enlarged
+for a TV. The app adds what a remote needs:
+
+- directional movement with a visible focus ring, through every page, menu,
+  pop-up and the player's own controls;
+- an on-screen keyboard for search;
+- play, pause and seek from the remote, sent to the site's player as ordinary
+  key presses.
+
+You sign in on the service's own page, exactly as in a browser, with a real
+keyboard. The app never sees your password.
 
 ## What it is not
 
@@ -36,22 +47,42 @@ in a browser.
 | Select | A | Enter |
 | Back | B | Backspace, Esc |
 | Play/pause | X (A in the player) | Space |
-| Seek 10 s | LB / RB (left/right in the player) | Left / Right in the player |
+| Skip back or forward | LB / RB (left/right in the player) | Left / Right in the player |
+| Player controls and menus | Up or Down in the player | Up or Down in the player |
 | Search | Y | / |
+| About and key help | Right stick click | Ctrl+O |
 | Quit | | Ctrl+Q |
 | Save a page outline for bug reports | | Ctrl+Shift+D |
+
+## Installing
+
+There is no published release yet. Until there is, build it yourself (below).
+A build made by the project's "Build packages" workflow can also be downloaded
+from the repository's Actions tab by anyone signed in to GitHub.
+
+The app downloads the Widevine component from Google the first time it runs;
+it is not included in the package. Playback needs that download to succeed.
 
 ## Building from source
 
 Needs Node.js 22+ and git.
 
 ```
-git clone <this repo>
-cd tropic-video
+git clone https://github.com/AndrewGBest/Tropic-Video.git
+cd Tropic-Video
 npm ci
 npm run check     # typecheck, tests, build, rule checks
 npm start         # opens a development window
+npm run dist      # builds release/TropicVideo-x86_64.AppImage and a tarball
 ```
+
+## Options
+
+| Option | What it does |
+|---|---|
+| `--fullscreen` | Start fullscreen (the packaged app always does). |
+| `--zoom=<factor>` | Override the TV scale. The default fits the site to a 960x540 canvas: 2 on a 1080p screen. `--zoom=1` turns scaling off. |
+| `--automation` | For scripted runs: blocks purchase, rental, subscription and sign-up controls. |
 
 ## Your account
 
