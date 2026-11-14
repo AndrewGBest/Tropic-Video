@@ -64,6 +64,8 @@ describe('player keys', () => {
     expect(playerKeyInfo('seekBack')?.code).toBe('Left');
     expect(playerKeyInfo('seekForward')?.code).toBe('Right');
     expect(playerKeyInfo('close')).toEqual({ code: 'Escape', domKey: 'Escape' });
+    expect(playerKeyInfo('backspace')?.code).toBe('Backspace');
+    expect(playerKeyInfo('enter')).toEqual({ code: 'Enter', domKey: 'Enter', char: '\r' });
     for (const bad of ['Enter', 'toString', '__proto__', '', 5, null, undefined, {}]) {
       expect(playerKeyInfo(bad)).toBeNull();
     }

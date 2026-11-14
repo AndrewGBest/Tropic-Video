@@ -58,6 +58,10 @@ Update this at the end of every working session.
   bar dropdowns): Enter rests the pointer on the button when a click leaves it
   collapsed; Back closes the menu and returns focus to the button.
 
+- On-screen keyboard (`src/shared/osk.ts`, drawn by the overlay): appears when
+  focus lands on a text field, types through the shell as ordinary text
+  input, and is put away by Back or by typing on a real keyboard.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -89,6 +93,7 @@ Update this at the end of every working session.
 | Controls stay up while focused, then let go | live site: focus held through 10 s of sampling; gone after 20 s without a key |
 | Back with a player menu open | live site: first Back leaves the controls, second closes the menu, third closes the player and stays on the title page |
 | The profile menu opens, is walkable and closes from the remote | live site: Enter expanded it, down moved through its entries, Back hid it. No profile was switched |
+| Search from the remote, end to end | live site: search key, letters, space and delete typed with the on-screen keyboard, its search key loaded the results page, arrows moved through the results grid; also e2e on the fixture |
 
 ### Still not verified after session 2
 
@@ -109,6 +114,10 @@ Update this at the end of every working session.
   the sign-in and user-agent parts of the second.
 
 ### Found, not fixed
+
+- The on-screen keyboard has lower-case letters, digits and four symbols
+  only: no capitals, accents or other scripts, so it suits search, not
+  passwords. Sign-in still needs a real keyboard.
 
 - During an advertisement the player's more menu does not open, and the
   reveal of controls was unreliable around the switch from advertisement to

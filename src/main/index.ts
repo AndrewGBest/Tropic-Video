@@ -4,6 +4,7 @@ import * as electron from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { BridgeMessage, LayerOptions, SpikeEvent } from '../shared/actions';
+import { typableText } from '../shared/osk';
 import { playerKeyInfo } from '../shared/player-keys';
 import { browserUserAgent, isAllowedUrl } from './hosts';
 import { hoverPoint, tvZoom } from './zoom';
@@ -167,8 +168,14 @@ function wireMessages(): void {
         const info = playerKeyInfo(msg.key);
         if (info) {
           event.sender.sendInputEvent({ type: 'keyDown', keyCode: info.code });
+          if (info.char) event.sender.sendInputEvent({ type: 'char', keyCode: info.char });
           event.sender.sendInputEvent({ type: 'keyUp', keyCode: info.code });
         }
+        break;
+      }
+      case 'typeText': {
+        const text = typableText(msg.text);
+        if (text) void event.sender.insertText(text);
         break;
       }
       case 'revealControls': {

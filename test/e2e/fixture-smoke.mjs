@@ -80,7 +80,7 @@ function connect(url) {
 }
 
 const KEYS = {
-  ArrowUp: 38, ArrowDown: 40, ArrowLeft: 37, ArrowRight: 39, Enter: 13,
+  ArrowUp: 38, ArrowDown: 40, ArrowLeft: 37, ArrowRight: 39, Enter: 13, '/': 191, Escape: 27,
 };
 
 let failures = 0;
@@ -134,6 +134,27 @@ try {
 
   const ua = await evaluate('navigator.userAgent');
   check('user agent hides nothing but the app tokens', /Electron|tropic-video/i.test(ua) === false && /Linux/.test(ua) && /Chrome\//.test(ua), true);
+
+  // On-screen keyboard: the search key focuses the field and a remote can type into it.
+  await press('/');
+  await sleep(300);
+  check('search key focuses the search field', await evaluate('document.activeElement?.id'), 'search');
+  await press('Enter'); // "a"
+  await press('ArrowRight');
+  await press('ArrowDown');
+  await press('Enter'); // "l", under "b"
+  await sleep(300);
+  check('the on-screen keyboard types into the field', await evaluate('document.getElementById("search").value'), 'al');
+  for (let i = 0; i < 3; i++) await press('ArrowDown');
+  await press('Enter'); // bottom row under the second column is "space"
+  await press('ArrowRight');
+  await press('Enter'); // "delete"
+  await press('Enter');
+  await sleep(300);
+  check('space and delete work', await evaluate('document.getElementById("search").value'), 'a');
+  await press('Escape');
+  await press('Escape');
+  check('back closes the keyboard and then leaves the field', await evaluate('document.activeElement?.id ?? ""'), '');
 
   // A refused navigation must be visible: the page stays, a toast appears, the terminal says why.
   const toastText = async () => {

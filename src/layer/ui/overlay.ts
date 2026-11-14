@@ -1,6 +1,8 @@
 // The layer's own on-screen elements: focus ring and toast. They live in a
 // closed shadow root so the site's styles cannot affect them and ours cannot
 // leak out. Styles use a constructed stylesheet, which page CSP does not block.
+import type { OskKey } from '../../shared/osk';
+
 export const HOST_TAG = 'tropic-overlay';
 
 const CSS = `
@@ -17,11 +19,25 @@ const CSS = `
   padding: 2vh 3.4vh; border-radius: 1.4vh; max-width: 80vw; text-align: center; opacity: 0; transition: opacity .2s;
 }
 .toast.show { opacity: 1; }
+.osk {
+  position: fixed; left: 50%; bottom: 4vh; transform: translateX(-50%);
+  display: none; grid-template-columns: repeat(10, 7.2vh); gap: 1vh;
+  padding: 2.2vh; border-radius: 2vh; background: rgba(12,14,18,.96);
+  box-shadow: 0 1vh 6vh rgba(0,0,0,.7);
+}
+.osk.show { display: grid; }
+.osk .key {
+  height: 7.2vh; border-radius: 1.2vh; background: #2a2f38; color: #f2f2f2;
+  font: 600 3.6vh/7.2vh system-ui, sans-serif; text-align: center;
+}
+.osk .key.wide { font-size: 3vh; }
+.osk .key.on { background: #fff; color: #111; box-shadow: 0 0 0 .5vh rgba(255,255,255,.35); }
 `;
 
 export class Overlay {
   private readonly ring: HTMLElement;
   private readonly toastEl: HTMLElement;
+  private readonly oskEl: HTMLElement;
   private target: Element | null = null;
   private toastTimer: number | undefined;
   private raf = 0;
@@ -41,7 +57,11 @@ export class Overlay {
     this.toastEl = doc.createElement('div');
     this.toastEl.className = 'toast';
     this.toastEl.setAttribute('role', 'status');
-    root.append(this.ring, this.toastEl);
+    this.oskEl = doc.createElement('div');
+    this.oskEl.className = 'osk';
+    this.oskEl.setAttribute('role', 'group');
+    this.oskEl.setAttribute('aria-label', 'On-screen keyboard');
+    root.append(this.ring, this.toastEl, this.oskEl);
     doc.documentElement.append(host);
   }
 
@@ -66,6 +86,26 @@ export class Overlay {
       this.raf = view.requestAnimationFrame(step);
     };
     step();
+  }
+
+  /** Draws the on-screen keyboard with one key highlighted; `null` hides it. */
+  keyboard(rows: readonly (readonly OskKey[])[] | null, active?: { row: number; index: number }): void {
+    if (!rows) {
+      this.oskEl.classList.remove('show');
+      return;
+    }
+    const keys: HTMLElement[] = [];
+    rows.forEach((row, r) =>
+      row.forEach((key, i) => {
+        const el = this.doc.createElement('div');
+        el.className = `key${key.span > 1 ? ' wide' : ''}${active && active.row === r && active.index === i ? ' on' : ''}`;
+        el.style.gridColumn = `span ${key.span}`;
+        el.textContent = key.label;
+        keys.push(el);
+      }),
+    );
+    this.oskEl.replaceChildren(...keys);
+    this.oskEl.classList.add('show');
   }
 
   toast(message: string, ms = 2500): void {

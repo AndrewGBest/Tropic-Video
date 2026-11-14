@@ -278,3 +278,20 @@ hover. Moving the pointer is ordinary input (Hard rule 4) and needs no
 selectors.
 **Not done:** pointer-follows-focus everywhere. It would trigger the site's
 hover previews on every card; decide after seeing it on a TV.
+
+## 2026-11-14: On-screen keyboard types through the shell
+
+**Decision:** the layer draws its own keyboard (original layout: four rows of
+ten, then space, delete, search) when its focus lands on a text field. Keys
+are typed by the main process with `webContents.insertText`, and delete and
+search are real Backspace and Enter key presses. The layer never sets a
+field's value itself.
+**Reason:** a remote has no letters, so search was unusable from the couch.
+Typing as input, not by writing to the site's field, keeps to Hard rule 4 and
+lets the site's own suggestions and form handling work unchanged.
+**Found on the way:** an Enter key press needs its character event as well,
+or the site's search form does not submit.
+**Limits:** lower-case letters, digits and four symbols. Deliberately not a
+password keyboard: sign-in is the user's business on the service's own page
+(Hard rule 9), with a real keyboard.
+**Reopen if:** users need other scripts or capitals for search.

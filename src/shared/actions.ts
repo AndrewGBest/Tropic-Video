@@ -1,4 +1,4 @@
-import type { PlayerKey } from './player-keys';
+import type { PlayerKey, TextKey } from './player-keys';
 
 // Every input device is reduced to one of these actions before anything else
 // sees it. Adding a device means writing a mapper to Action, nothing more.
@@ -21,7 +21,9 @@ export type ActionType = Action['type'];
 export type BridgeMessage =
   | { kind: 'exit' }
   | { kind: 'playback'; playing: boolean }
-  | { kind: 'playerKey'; key: PlayerKey }
+  | { kind: 'playerKey'; key: PlayerKey | TextKey }
+  /** Ask the shell to type text into whatever has focus, as a keyboard would. */
+  | { kind: 'typeText'; text: string }
   /** Ask the shell to move the pointer a little, which makes a site's player show its controls. */
   | { kind: 'revealControls' }
   /** Ask the shell to rest the pointer on a point of the page (CSS pixels), for menus that open on hover. */

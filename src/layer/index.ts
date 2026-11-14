@@ -7,6 +7,7 @@ import { buildOutline, sanitizeUrl } from './diagnostics/outline';
 import { installPurchaseGuard } from './guard/purchase-guard';
 import { startPolling } from './input/gamepad';
 import { keyToAction, type Mode } from './input/keys';
+import { OSK_ROWS, OskModel } from '../shared/osk';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
 import { findMainVideo, isPlayerActive, playerScope } from './player';
 import { edgeControl, isVisible, SpatialNavigator } from './spatial/navigator';
@@ -55,7 +56,10 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const nav = new SpatialNavigator(doc, {
     extraFocusable: adapter.selectors.extraFocusable,
     ignoreWithin: HOST_TAG,
-    onFocusChange: (el) => overlay.track(el),
+    onFocusChange: (el) => {
+      overlay.track(el);
+      if (el && isTextEntry(el)) openOsk();
+    },
     scope,
     skip: [...adapter.selectors.rowPrev, ...adapter.selectors.rowNext],
   });
@@ -121,7 +125,41 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     return false;
   };
 
+  // On-screen keyboard: shown when layer focus lands on a text field, so a
+  // remote can type. It types through the shell, like a real keyboard would.
+  const osk = new OskModel();
+  let oskOpen = false;
+  const drawOsk = (): void => overlay.keyboard(oskOpen ? OSK_ROWS : null, { row: osk.row, index: osk.index });
+  const openOsk = (): void => {
+    if (!oskOpen) osk.reset();
+    oskOpen = true;
+    drawOsk();
+  };
+  const closeOsk = (): void => {
+    if (!oskOpen) return;
+    oskOpen = false;
+    drawOsk();
+  };
+  const pressOsk = (): void => {
+    const key = osk.key;
+    if (key.kind === 'char' || key.kind === 'space') {
+      send({ kind: 'typeText', text: key.text ?? '' });
+      return;
+    }
+    const name = key.kind === 'backspace' ? 'backspace' : 'enter';
+    const info = playerKeyInfo(name);
+    if (!info) return;
+    injected.expect(info.domKey, Date.now());
+    send({ kind: 'playerKey', key: name });
+    if (key.kind === 'submit') closeOsk();
+  };
+
   const mode = (): Mode => {
+    if (oskOpen) {
+      // The keyboard only makes sense while its field still has focus.
+      if (isTextEntry(doc.activeElement)) return 'browse';
+      closeOsk();
+    }
     if (isTextEntry(doc.activeElement)) return 'text';
     if (!inPlayer()) return 'browse';
     return onPlayerControl() ? 'browse' : 'player';
@@ -249,6 +287,27 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
 
   const dispatch = (a: Action): void => {
     doc.documentElement.classList.add('tropic-no-pointer');
+    if (oskOpen) {
+      if (a.type === 'move') {
+        // Up from the top row leaves the keyboard for the page.
+        if (!osk.move(a.dir) && a.dir === 'up') {
+          closeOsk();
+          (doc.activeElement as HTMLElement | null)?.blur();
+          nav.move('up');
+        }
+        drawOsk();
+        return;
+      }
+      if (a.type === 'select') {
+        pressOsk();
+        return;
+      }
+      if (a.type === 'back') {
+        closeOsk();
+        return;
+      }
+      closeOsk();
+    }
     switch (a.type) {
       case 'move':
         if (inPlayer()) moveInPlayer(a.dir);
@@ -302,6 +361,11 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     if (!e.isTrusted && !options.automation) return;
     // A key the layer asked the shell to press: it belongs to the site.
     if (e.isTrusted && injected.consume(e.key, Date.now())) return;
+    // A real keyboard is in use: typing a character puts the on-screen one away.
+    if (oskOpen && e.isTrusted && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      closeOsk();
+      return;
+    }
     const action = keyToAction(e, mode());
     if (!action) return;
     // In the player, a key that is already the site's own key for the action

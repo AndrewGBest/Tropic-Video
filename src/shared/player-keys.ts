@@ -4,19 +4,25 @@
 // example during an advertisement). Instead the layer asks the shell to press
 // a real key, and the site's player handles it like any other key press.
 export type PlayerKey = 'playPause' | 'seekBack' | 'seekForward' | 'close';
+/** Keys the on-screen keyboard presses besides typing text. */
+export type TextKey = 'backspace' | 'enter';
 
 interface KeyInfo {
   /** Electron accelerator-style key code for `webContents.sendInputEvent`. */
   code: string;
   /** The `KeyboardEvent.key` value the page will see. */
   domKey: string;
+  /** Character to send between key down and key up, where the browser acts on the character (Enter submitting a form). */
+  char?: string;
 }
 
-const KEYS: Record<PlayerKey, KeyInfo> = {
+const KEYS: Record<PlayerKey | TextKey, KeyInfo> = {
   playPause: { code: 'Space', domKey: ' ' },
   seekBack: { code: 'Left', domKey: 'ArrowLeft' },
   seekForward: { code: 'Right', domKey: 'ArrowRight' },
   close: { code: 'Escape', domKey: 'Escape' },
+  backspace: { code: 'Backspace', domKey: 'Backspace' },
+  enter: { code: 'Enter', domKey: 'Enter', char: '\r' },
 };
 
 /** The player key an action stands for, if any. */
@@ -38,7 +44,7 @@ export function isNativePlayerKey(domKey: string, action: { type: string; second
 
 /** Validates an untrusted value from the page side; anything else yields null. */
 export function playerKeyInfo(key: unknown): KeyInfo | null {
-  return typeof key === 'string' && Object.hasOwn(KEYS, key) ? KEYS[key as PlayerKey] : null;
+  return typeof key === 'string' && Object.hasOwn(KEYS, key) ? KEYS[key as PlayerKey | TextKey] : null;
 }
 
 /**
