@@ -46,6 +46,8 @@ Update this at the end of every working session.
 - Hard rule 6 changed by Andrew: the service's TV layout may be used as a
   reference; no assets or marks (see `DECISIONS.md` and `DESIGN.md` 6a).
 - Focus zoom: the focused card grows by 8%, picture and all, as on a TV.
+- Focus on the first screenful (bar and banner) shows the page from the very
+  top, so the banner is never half under the bar. Checked on the live site.
 
 ### Verified in session 2, and how
 
@@ -95,8 +97,6 @@ Update this at the end of every working session.
   is then dropped; the next up/down starts again from the middle.
 - Up from the player's bottom row lands on the volume slider, not the button.
   The seek bar itself is not reachable (left/right seek instead).
-- After a slide change the page scrolls so the slide's title sits partly under
-  the navigation bar.
 - Menus opened from player controls (subtitles, audio) have not been walked.
 - `sendInputEvent` needs the window to have focus. Fine on a TV; a desktop
   window in the background would ignore gamepad play/pause.

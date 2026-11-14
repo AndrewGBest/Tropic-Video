@@ -242,7 +242,17 @@ export class SpatialNavigator {
     if (el instanceof HTMLElement || 'focus' in el) {
       (el as HTMLElement).focus({ preventScroll: true });
     }
-    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+    // Anything on the first screenful (the bar and the banner under it) is
+    // shown with the page at the very top, so the banner is seen whole and
+    // not half under the bar. Further down, the focused row is centred.
+    const top = view ? el.getBoundingClientRect().top + view.scrollY : Infinity;
+    const bottom = view ? top + el.getBoundingClientRect().height : Infinity;
+    if (view && bottom <= view.innerHeight) {
+      // Only this: a second scroll request would replace it and stop short of the top.
+      view.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+    }
     this.opts.onFocusChange?.(el);
     return true;
   }

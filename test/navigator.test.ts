@@ -247,3 +247,20 @@ describe('focus zoom', () => {
     expect(document.getElementById('field')!.hasAttribute(ZOOM_ATTR)).toBe(false);
   });
 });
+
+describe('scrolling to the focused control', () => {
+  it('goes to the top of the page for anything on the first screenful, and centres rows below it', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 540, configurable: true });
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    document.body.innerHTML = card('inBanner', 40, 300) + card('lower', 40, 900);
+    const calls: string[] = [];
+    window.scrollTo = ((opts: ScrollToOptions) => calls.push(`top:${opts.top}`)) as typeof window.scrollTo;
+    Element.prototype.scrollIntoView = function (this: Element, opts?: ScrollIntoViewOptions | boolean): void {
+      calls.push(`${this.id}:${typeof opts === 'object' ? opts.block : ''}`);
+    };
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('inBanner'));
+    nav.focus(document.getElementById('lower'));
+    expect(calls).toEqual(['top:0', 'lower:center']);
+  });
+});
