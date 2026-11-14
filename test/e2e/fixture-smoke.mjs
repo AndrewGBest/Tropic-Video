@@ -136,7 +136,8 @@ try {
   // Quit is handled by the main process, so it must work whatever the page is doing.
   const exited = new Promise((resolve) => child.once('exit', () => resolve(true)));
   const q = { key: 'q', code: 'KeyQ', windowsVirtualKeyCode: 81, nativeVirtualKeyCode: 81, modifiers: 2 };
-  await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...q }).catch(() => undefined);
+  // Not awaited: the app can exit before it answers, and then the reply never comes.
+  void cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...q }).catch(() => undefined);
   check('Ctrl+Q quits the app', await Promise.race([exited, sleep(4000).then(() => false)]), true);
 
   cdp.close();
