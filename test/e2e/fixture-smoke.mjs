@@ -381,6 +381,69 @@ try {
   }
 }
 
+// Fourth launch: the service cannot be reached at first. The window must say
+// so, keep trying, and load the page once it is there.
+{
+  // Find a free port, then leave it closed for now.
+  const probe = createServer();
+  await new Promise((r) => probe.listen(0, '127.0.0.1', r));
+  const sitePort = probe.address().port;
+  await new Promise((r) => probe.close(r));
+  const port4 = port + 3;
+  const userData4 = mkdtempSync(join(tmpdir(), 'tropic-video-e2e-'));
+  let log4 = '';
+  const child4 = spawn(
+    electronPath,
+    [root, '--dev', '--automation', '--zoom=1', `--url=http://127.0.0.1:${sitePort}/`, `--remote-debugging-port=${port4}`, `--user-data-dir=${userData4}`, '--no-sandbox', '--disable-gpu'],
+    { stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  child4.stdout.on('data', (d) => (log4 += d));
+  child4.stderr.on('data', (d) => (log4 += d));
+  const before = failures;
+  let site;
+  try {
+    const pageWhere = async (test) => {
+      for (let i = 0; i < 100; i++) {
+        try {
+          const targets = await (await fetch(`http://127.0.0.1:${port4}/json/list`)).json();
+          const hit = targets.find((t) => t.type === 'page' && test(t.url));
+          if (hit) return hit;
+        } catch {
+          // not listening yet
+        }
+        await sleep(200);
+      }
+      return null;
+    };
+    const notice = await pageWhere((url) => url.startsWith('data:'));
+    check('an unreachable start page is replaced by a notice', !!notice, true);
+    if (notice) {
+      const cdp = await connect(notice.webSocketDebuggerUrl);
+      let text = '';
+      for (let i = 0; i < 50 && !text; i++) {
+        const r = await cdp.send('Runtime.evaluate', { expression: 'document.body?.innerText ?? ""', returnByValue: true });
+        text = typeof r.result.value === 'string' ? r.result.value : '';
+        if (!text) await sleep(100);
+      }
+      check('the notice says the service cannot be reached and that it will retry', [text.includes('Cannot reach'), /Trying again in \d+ seconds/.test(text)], [true, true]);
+      cdp.close();
+    }
+    site = createServer((_req, res) => res.writeHead(200, { 'content-type': 'text/html' }).end('<!doctype html><title>back</title><p id="up">up</p>'));
+    await new Promise((r) => site.listen(sitePort, '127.0.0.1', r));
+    const loaded = await pageWhere((url) => url.startsWith(`http://127.0.0.1:${sitePort}`));
+    check('the page loads by itself once the service is reachable', !!loaded, true);
+  } catch (err) {
+    failures += 1;
+    console.error(String(err));
+  } finally {
+    if (failures > before) appLog += `\n--- unreachable launch ---\n${log4}`;
+    child4.kill();
+    site?.close();
+    await sleep(300);
+    rmSync(userData4, { recursive: true, force: true });
+  }
+}
+
 if (failures) {
   console.error(`\n${failures} check(s) failed\n--- app log ---\n${appLog}`);
   process.exit(1);

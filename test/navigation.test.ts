@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { blockReason, blockedMessage, describeBlockedUrl, noticePageUrl } from '../src/main/navigation';
+import {
+  blockReason,
+  blockedMessage,
+  describeBlockedUrl,
+  isLoadFailure,
+  noticePageUrl,
+  offlinePageUrl,
+  retryDelaySeconds,
+} from '../src/main/navigation';
 
 const live = { dev: false, automation: false };
 const auto = { dev: false, automation: true };
@@ -74,5 +82,38 @@ describe('noticePageUrl', () => {
 
   it('does not mention automation for an ordinary blocked site', () => {
     expect(decode(noticePageUrl('other-site', 'https://example.com/'))).not.toContain('--automation');
+  });
+});
+
+describe('load failures', () => {
+  const decode = (url: string): string => decodeURIComponent(url.slice(url.indexOf(',') + 1));
+
+  it('treats network errors as failures, but not cancelled navigations or the notice pages themselves', () => {
+    expect(isLoadFailure(-106, 'https://www.example.com/')).toBe(true);
+    expect(isLoadFailure(-105, 'https://www.example.com/x')).toBe(true);
+    expect(isLoadFailure(-3, 'https://www.example.com/')).toBe(false);
+    expect(isLoadFailure(0, 'https://www.example.com/')).toBe(false);
+    expect(isLoadFailure(-106, 'data:text/html,x')).toBe(false);
+    expect(isLoadFailure(-106, 'about:blank')).toBe(false);
+  });
+
+  it('retries quickly at first and then every half minute', () => {
+    expect([1, 2, 3, 6, 7, 50].map(retryDelaySeconds)).toEqual([5, 10, 15, 30, 30, 30]);
+    expect(retryDelaySeconds(0)).toBe(5);
+  });
+
+  it('shows a self-contained page that says what happened and that it will retry', () => {
+    const page = decode(offlinePageUrl('ERR_INTERNET_DISCONNECTED', 10));
+    expect(page).toContain('Cannot reach the streaming service');
+    expect(page).toContain('ERR_INTERNET_DISCONNECTED');
+    expect(page).toContain('10 seconds');
+    expect(page).toContain('Ctrl+Q');
+    expect(page).not.toMatch(/<script|src=|href=|url\(/i);
+  });
+
+  it('cleans the reported description', () => {
+    const page = decode(offlinePageUrl('<img onerror=x> "&', 5));
+    expect(page).not.toMatch(/<img|onerror=x>/i);
+    expect(decode(offlinePageUrl('', 5))).toContain('no details');
   });
 });

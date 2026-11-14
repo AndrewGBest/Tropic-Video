@@ -94,6 +94,10 @@ Update this at the end of every working session.
   zoom setting, validated by `src/shared/config.ts`. Documented in the README.
   Gamepad buttons are not remappable yet.
 
+- "Cannot reach the streaming service" notice when a page fails to load, with
+  automatic retry (5 s, 10 s, ... up to every 30 s).
+- Common remote buttons mapped by default (Back, Stop, Search, Menu, Info).
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -136,8 +140,15 @@ Update this at the end of every working session.
 | A collection grid walks in all four directions | live site: column kept going down, edges stop, more cards load as you go |
 | Live TV from the remote | live site: a station's pop-up, its play button, the live player's controls, and Back to the pop-up. Space did not pause the live stream (the site's choice, not checked further) |
 | Packages build in CI | "Build packages" workflow run on GitHub: check, e2e and electron-builder all green, artifact `tropic-video-linux-x64` produced (AppImage and tarball). The artifact itself was not downloaded and run |
+| Media keys and desktop media widgets (MPRIS) | live site: Chromium registered an MPRIS player while a title played (status Playing, can pause, can seek); its PlayPause paused and resumed the picture. No code of ours is involved |
+| Sleep is held off during playback and released when paused | live site on KDE Wayland: the session's inhibition list had three entries from the app while playing (two from Chromium, one from `powerSaveBlocker`), none while paused or browsing, three again on resume |
+| Unreachable service shows a notice and recovers | e2e: start page on a closed port showed the notice; when a server appeared on that port the page loaded by itself |
 
 ### Still not verified after session 2
+
+- The cannot-connect notice against the real service (only a local closed
+  port was tried), and losing the network in the middle of a session.
+- Sleep inhibition under X11, GNOME and gamescope (only KDE Wayland was checked).
 
 - Remote coverage still to walk: the rent or buy drawer on a movie page (not
   opened under automation).
@@ -246,7 +257,7 @@ Update this at the end of every working session.
   behaviour, whether the site accepts the shell's user agent.
 - Gamepad polling with a physical controller (the mapping and repeat logic are
   unit-tested; the browser wrapper is not exercised).
-- `powerSaveBlocker` actually holding off the screensaver on Wayland/gamescope.
+- (Checked in session 2 on KDE Wayland; see above. Gamescope still unchecked.)
 - Packaging: `electron-builder --linux dir` produced an unpacked build in the
   cloud workspace, but that build was not launched, and no AppImage, tarball or
   Flatpak bundle has been made. The release workflow has never run.

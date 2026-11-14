@@ -9,7 +9,15 @@ import { typableText } from '../shared/osk';
 import { playerKeyInfo } from '../shared/player-keys';
 import { browserUserAgent, isAllowedUrl } from './hosts';
 import { hoverPoint, tvZoom } from './zoom';
-import { blockReason, blockedMessage, describeBlockedUrl, noticePageUrl } from './navigation';
+import {
+  blockReason,
+  blockedMessage,
+  describeBlockedUrl,
+  isLoadFailure,
+  noticePageUrl,
+  offlinePageUrl,
+  retryDelaySeconds,
+} from './navigation';
 
 const HOME_URL = 'https://www.primevideo.com/';
 const argv = process.argv.slice(1);
@@ -109,8 +117,24 @@ function createWindow(): BrowserWindow {
       app.quit();
     }
   });
+  // A page that cannot be reached (no network, service down): say so and keep
+  // trying, instead of leaving a blank window.
+  let retryTimer: NodeJS.Timeout | undefined;
+  let retryAttempt = 0;
   wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
-    if (isMainFrame) console.error(`[tropic-video] page failed to load (${code} ${description}): ${url}`);
+    if (!isMainFrame || !isLoadFailure(code, url)) return;
+    console.error(`[tropic-video] page failed to load (${code} ${description}): ${describeBlockedUrl(url)}`);
+    if (blockReason(url, options)) return;
+    retryAttempt += 1;
+    const wait = retryDelaySeconds(retryAttempt);
+    clearTimeout(retryTimer);
+    void wc.loadURL(offlinePageUrl(description, wait));
+    retryTimer = setTimeout(() => {
+      if (!wc.isDestroyed()) void wc.loadURL(url);
+    }, wait * 1000);
+  });
+  wc.on('did-navigate', (_e, url) => {
+    if (!url.startsWith('data:') && url !== 'about:blank') retryAttempt = 0;
   });
   wc.on('render-process-gone', (_e, details) => {
     console.error(`[tropic-video] renderer exited: ${details.reason}`);

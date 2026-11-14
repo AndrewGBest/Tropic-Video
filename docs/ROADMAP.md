@@ -42,13 +42,13 @@ how in `STATUS.md`.
 
 - [x] Config file with key remapping and zoom (edited by hand; no settings screen)
 - [ ] Gamepad button remapping
-- [ ] MPRIS integration and media keys
+- [x] MPRIS and media keys (Chromium's own; verified, nothing to build)
 - [ ] CEC helper (optional, separate process)
-- [ ] Idle inhibit verified under Wayland, X11 and gamescope
+- [ ] Idle inhibit verified under Wayland (done on KDE), X11 and gamescope
 - [ ] Hardware decode flags
 - [ ] Adapter update channel (signed data file, fetched from the project's GitHub only)
-- [ ] About screen with the non-affiliation notice
-- [ ] Offline and error messages (as toasts or the notice page, not new screens)
+- [x] About panel with the non-affiliation notice
+- [x] Offline message with automatic retry (the notice page)
 
 **Done when:** it runs for a week as the daily driver on one HTPC.
 
