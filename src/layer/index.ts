@@ -7,7 +7,7 @@ import { buildOutline, sanitizeUrl } from './diagnostics/outline';
 import { installPurchaseGuard } from './guard/purchase-guard';
 import { startPolling } from './input/gamepad';
 import { keyToAction, type Mode } from './input/keys';
-import { OSK_ROWS, OskModel } from '../shared/osk';
+import { isSecretField, OSK_ROWS, OskModel } from '../shared/osk';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
 import { findMainVideo, isPlayerActive, playerScope } from './player';
 import { edgeControl, isVisible, SpatialNavigator } from './spatial/navigator';
@@ -58,7 +58,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     ignoreWithin: HOST_TAG,
     onFocusChange: (el) => {
       overlay.track(el);
-      if (el && isTextEntry(el)) openOsk();
+      if (el && isTextEntry(el) && !isSecretField(el.getAttribute('type'), el.getAttribute('autocomplete'))) openOsk();
     },
     scope,
     skip: [...adapter.selectors.rowPrev, ...adapter.selectors.rowNext],

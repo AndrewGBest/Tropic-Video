@@ -89,3 +89,13 @@ export function typableText(text: unknown): string | null {
   }
   return text;
 }
+
+/**
+ * True for fields the on-screen keyboard must stay out of: passwords and
+ * one-time codes. Credentials are typed by the user on a real keyboard,
+ * never by the app (Hard rule 9).
+ */
+export function isSecretField(type: string | null, autocomplete: string | null): boolean {
+  if ((type ?? '').toLowerCase() === 'password') return true;
+  return /password|one-time-code/i.test(autocomplete ?? '');
+}

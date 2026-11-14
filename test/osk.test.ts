@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OSK_COLUMNS, OSK_ROWS, OskModel, typableText } from '../src/shared/osk';
+import { isSecretField, OSK_COLUMNS, OSK_ROWS, OskModel, typableText } from '../src/shared/osk';
 
 describe('on-screen keyboard layout', () => {
   it('fills every row exactly', () => {
@@ -66,5 +66,20 @@ describe('typableText', () => {
 
   it('refuses control characters, long strings and non-strings', () => {
     for (const bad of ['', '\n', '\u0008', 'a\tb', 'hello', 5, null, undefined, {}]) expect(typableText(bad)).toBeNull();
+  });
+});
+
+describe('isSecretField', () => {
+  it('keeps the keyboard out of passwords and one-time codes', () => {
+    expect(isSecretField('password', null)).toBe(true);
+    expect(isSecretField('PASSWORD', '')).toBe(true);
+    expect(isSecretField('text', 'current-password')).toBe(true);
+    expect(isSecretField('tel', 'one-time-code')).toBe(true);
+  });
+
+  it('allows ordinary fields', () => {
+    expect(isSecretField('search', 'off')).toBe(false);
+    expect(isSecretField(null, null)).toBe(false);
+    expect(isSecretField('email', 'username')).toBe(false);
   });
 });
