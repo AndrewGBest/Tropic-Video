@@ -307,6 +307,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
 
   const dispatch = (a: Action): void => {
     doc.documentElement.classList.add('tropic-no-pointer');
+    // A pending "pick focus up again" belongs to the previous key; a new key
+    // overrides it (Back right after Enter must not have focus put back).
+    view.clearTimeout(refocusTimer);
     if (oskOpen) {
       if (a.type === 'move') {
         // Up from the top row leaves the keyboard for the page.
@@ -419,8 +422,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     const playing = !!v && !v.paused && !v.ended;
     // Focus left over from the page behind must not carry into the player, and
     // the ring must not sit on the picture unless the user is on a control.
-    if (playing && !lastPlaying) nav.clear();
-    else if (playing && !onPlayerControl()) overlay.track(null);
+    // (onPlayerControl drops focus that is outside the player. Focus on a
+    // control is kept: pausing and resuming from the control bar must not lose it.)
+    if (playing && !onPlayerControl()) overlay.track(null);
     if (playing !== lastPlaying) {
       lastPlaying = playing;
       send({ kind: 'playback', playing });

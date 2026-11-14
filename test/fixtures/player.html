@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tropic Video fixture: generic player</title>
+<!-- A made-up video player for testing. It imitates no real service. The picture is drawn on a canvas, so no media file is needed.
+     It behaves the way players commonly do: keys act on the window, controls are created when the pointer moves and removed soon after it stops. -->
+<style>
+  body { margin: 0; background: #111; color: #eee; font: 16px system-ui, sans-serif; }
+  #player { position: fixed; inset: 0; background: #000; }
+  #player video { width: 100%; height: 100%; }
+  #controls button { position: absolute; bottom: 40px; width: 60px; height: 60px; }
+  #pp { left: calc(50% - 30px); }
+  #more { left: calc(50% + 60px); }
+  #menu { position: absolute; right: 40px; top: 80px; background: #222; padding: 12px; }
+  #menu label { display: block; width: 240px; height: 36px; }
+  #menu input { opacity: 0; }
+</style>
+</head>
+<body>
+<a href="#behind" id="behind">A link on the page behind the player</a>
+<div id="player"><video id="v" playsinline></video></div>
+<script>
+  const state = (window.__p = { space: 0, left: 0, right: 0, escape: 0, closed: 0, option: null, moves: 0 });
+  const player = document.getElementById('player');
+  const video = document.getElementById('v');
+
+  // A moving picture without a file.
+  const canvas = document.createElement('canvas');
+  canvas.width = 320; canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+  let frame = 0;
+  setInterval(() => { ctx.fillStyle = `hsl(${frame++ % 360} 60% 30%)`; ctx.fillRect(0, 0, 320, 180); }, 100);
+  video.srcObject = canvas.captureStream(10);
+  video.muted = false;
+  video.play();
+
+  let controls = null;
+  let hideTimer;
+  const hide = () => { controls?.remove(); controls = null; };
+  const show = () => {
+    if (!controls) {
+      controls = document.createElement('div');
+      controls.id = 'controls';
+      controls.innerHTML = '<button id="pp">pp</button><button id="more">more</button>';
+      controls.querySelector('#pp').onclick = () => (video.paused ? video.play() : video.pause());
+      controls.querySelector('#more').onclick = () => {
+        if (controls.querySelector('#menu')) return controls.querySelector('#menu').remove();
+        controls.insertAdjacentHTML('beforeend', '<div id="menu"><label id="optA"><input type="radio" name="o" value="A">A</label><label id="optB"><input type="radio" name="o" value="B">B</label></div>');
+        controls.querySelectorAll('input').forEach((i) => (i.onchange = () => (state.option = i.value)));
+      };
+      player.append(controls);
+    }
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hide, 1500);
+  };
+  player.addEventListener('mousemove', () => { state.moves++; show(); });
+
+  window.addEventListener('keydown', (e) => {
+    if (!document.getElementById('player')) return;
+    if (e.key === ' ') { state.space++; video.paused ? video.play() : video.pause(); }
+    if (e.key === 'ArrowLeft') state.left++;
+    if (e.key === 'ArrowRight') state.right++;
+    if (e.key === 'Escape') {
+      state.escape++;
+      const menu = document.getElementById('menu');
+      if (menu) menu.remove();
+      else { state.closed++; video.pause(); player.remove(); }
+    }
+  });
+</script>
+</body>
+</html>

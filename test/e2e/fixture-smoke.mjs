@@ -269,6 +269,85 @@ try {
   }
 }
 
+// Third launch: a made-up player. Player control must reach the page as real
+// key presses, exactly once each, and the page's own controls must be usable.
+{
+  const playerFixture = pathToFileURL(join(root, 'test/fixtures/player.html')).href;
+  const port3 = port + 2;
+  const userData3 = mkdtempSync(join(tmpdir(), 'tropic-video-e2e-'));
+  let log3 = '';
+  const child3 = spawn(
+    electronPath,
+    [root, '--dev', '--automation', '--zoom=1', `--url=${playerFixture}`, `--remote-debugging-port=${port3}`, `--user-data-dir=${userData3}`, '--no-sandbox', '--disable-gpu'],
+    { stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  child3.stdout.on('data', (d) => (log3 += d));
+  child3.stderr.on('data', (d) => (log3 += d));
+  const before = failures;
+  try {
+    let page;
+    for (let i = 0; i < 100 && !page; i++) {
+      try {
+        const targets = await (await fetch(`http://127.0.0.1:${port3}/json/list`)).json();
+        page = targets.find((t) => t.type === 'page' && t.url.startsWith('file:'));
+      } catch {
+        // not listening yet
+      }
+      if (!page) await sleep(200);
+    }
+    const cdp = await connect(page.webSocketDebuggerUrl);
+    const evaluate = async (expression) => (await cdp.send('Runtime.evaluate', { expression, returnByValue: true })).result.value;
+    const VK = { ' ': 32, Enter: 13, ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Escape: 27 };
+    const press = async (key, wait = 400) => {
+      const base = { key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: VK[key], nativeVirtualKeyCode: VK[key] };
+      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...base });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
+      await sleep(wait);
+    };
+    const focusId = () => evaluate('document.querySelector("[data-tropic-focus]")?.id ?? null');
+    await sleep(1500);
+    check('the fixture player is playing', await evaluate('!document.getElementById("v").paused && document.getElementById("v").currentTime > 0'), true);
+
+    await press(' ');
+    check('a physical Space reaches the player once and pauses', await evaluate('[__p.space, document.getElementById("v").paused]'), [1, true]);
+    await press('Enter');
+    check('Enter becomes one Space key press and resumes', await evaluate('[__p.space, document.getElementById("v").paused]'), [2, false]);
+    await press('ArrowRight');
+    await press('ArrowLeft');
+    check('seek keys reach the player once each', await evaluate('[__p.left, __p.right]'), [1, 1]);
+    check('the layer did not move the picture itself', await evaluate('document.querySelector("[data-tropic-focus]") === null'), true);
+
+    await press('ArrowDown', 900);
+    check('down reveals the player controls and focuses one', [await focusId(), (await evaluate('__p.moves')) > 0, await evaluate('document.hasFocus()')], ['pp', true, true]);
+    await sleep(3000);
+    check('the controls stay up while one has focus', await focusId(), 'pp');
+    await press('ArrowRight');
+    check('arrows move between controls instead of seeking', [await focusId(), await evaluate('__p.right')], ['more', 1]);
+    await press('Enter', 900);
+    await press('ArrowUp');
+    check('a styled option in the opened menu takes focus', ['optA', 'optB'].includes(await focusId()), true);
+    await press('Enter');
+    check('and can be chosen', ['A', 'B'].includes(await evaluate('__p.option')), true);
+    check('the page behind the player was never focused', await evaluate('document.activeElement?.id !== "behind"'), true);
+
+    await press('Escape');
+    check('first Back returns to the picture', [await focusId(), await evaluate('__p.closed')], [null, 0]);
+    await press('Escape', 600);
+    check('second Back closes the open menu', await evaluate('[__p.escape, __p.closed]'), [1, 0]);
+    await press('Escape', 600);
+    check('third Back closes the player and stays on the page', await evaluate('[__p.closed, location.pathname.endsWith("player.html")]'), [1, true]);
+    cdp.close();
+  } catch (err) {
+    failures += 1;
+    console.error(String(err));
+  } finally {
+    if (failures > before) appLog += `\n--- player launch ---\n${log3}`;
+    child3.kill();
+    await sleep(300);
+    rmSync(userData3, { recursive: true, force: true });
+  }
+}
+
 if (failures) {
   console.error(`\n${failures} check(s) failed\n--- app log ---\n${appLog}`);
   process.exit(1);
