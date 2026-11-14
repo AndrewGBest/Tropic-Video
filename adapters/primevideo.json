@@ -1,13 +1,15 @@
 {
   "id": "primevideo",
   "schema": 1,
-  "revision": 0,
-  "verified": false,
-  "note": "No selector in this file may be added without a diagnostics outline from the live site that shows it. Empty means the generic heuristics are in use.",
+  "revision": 1,
+  "verified": true,
+  "note": "No selector in this file may be added without a diagnostics outline from the live site that shows it. Evidence for revision 1 is in test/fixtures/outlines/ (captured 2026-11-13) and is checked by test/adapter-evidence.test.ts. playerClose and extraFocusable are empty: the generic heuristics and history-back are in use.",
   "selectors": {
     "extraFocusable": [],
-    "searchInput": [],
+    "searchInput": ["input#pv-search-nav"],
+    "searchOpen": ["button[aria-expanded]:has(+ [data-testid=\"pv-nav-search-dropdown\"])"],
+    "playerRoot": ["#dv-web-player"],
     "playerClose": [],
-    "purchaseControls": []
+    "purchaseControls": [".dv-signup-button"]
   }
 }

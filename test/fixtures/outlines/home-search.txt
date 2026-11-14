@@ -1,0 +1,21 @@
+# Trimmed from an outline of the live site's home page, captured 2026-11-13 (signed in).
+# The desktop navigation's search control. Structure only; checked by eye for names and titles.
+ul.UEsHTy[role="presentation"]
+  li.ySsDCm[role="presentation"]
+    div.M20jI7.Pcqe_G.NjRNnC[data-testid=":id"]
+      button.SNxr4G.xcxdXF.O7yDnE[aria-expanded="false"][data-testid=":id"][aria-label:18]
+        span.I0rt3i
+          svg.fbl-icon._30dE3d._1a_Ljt.AuzObd[role="img"][aria-hidden="true"]
+            title{text:6}
+            svg
+      div.u9LsqE.OusFT8.Xi8DTh.NSqTzn._eOT2w[aria-hidden="true"][data-testid="pv-nav-search-dropdown"][tabindex="-1"]
+        div.gFz9FP[data-testid=":id"]
+          div.MkPvu9
+            div.vn6q4F
+              form.HC2pvG[aria-label:6]
+                span.WBdb7q
+                input[type="hidden"][name:2][value:4]
+                input[type="hidden"][name:4][value:10]
+                input#pv-search-nav.GAcohv[type="search"][placeholder:6][autocomplete="off"][name:6]
+                span.NJ4kvW
+                  button.Tj3a9j[type="reset"][data-testid="pv-nav-search-reset"][aria-label:5]{text:5}

@@ -16,6 +16,15 @@ Update this at the end of every working session.
   is on screen; if nothing has loaded yet, a built-in notice page replaces the
   blank window. Fixed a race in the e2e Ctrl+Q step.
 
+- Player control is now ordinary key presses sent by the shell; the layer no
+  longer touches the video element (Hard rule 4; see `DECISIONS.md`).
+- Adapter revision 1 with evidence outlines; new adapter keys `searchOpen` and
+  `playerRoot`; search opens the site's hidden search field.
+- The outline sanitiser masks free text embedded in ids and test ids. A local
+  outline from the live site had carried the profile name in a test id; it was
+  never committed.
+- The focus ring is hidden while video plays.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -29,6 +38,12 @@ Update this at the end of every working session.
 | With the signed-in profile, an `--automation` run loads the home page | `--dev --automation` run probed over DevTools: document on the service's home URL, `readyState` complete, about 2,300 elements; no redirect to `/offers/` |
 | A refused navigation shows a toast and is logged without its query | e2e on the fixture; unit tests |
 | A start page refused before anything loads shows the notice page | e2e with a local redirecting server; and a fresh signed-out profile under `--automation` against the live site (text read over DevTools, screenshot looked at) |
+| Generic navigation works on the live home page: cards focus, rows scroll sideways, up/down change rows | `--automation` run driven over DevTools, focus position read after each key |
+| Search key opens the site's search field and focuses it; Escape closes it | same run |
+| On a title page the background trailer no longer puts the layer in player mode | same run: arrows moved focus through the page's buttons |
+| The upsell link is blocked under automation | same run: Enter on it left the page unchanged |
+| Space and Enter pause and resume; Left/Right seek ten seconds; during an advertisement the site refuses the seek | same run: video element state read before and after each key; screenshot of the site's "Unavailable" message |
+| Back leaves the player | same run; it lands on the home page, not the title page |
 
 ### Still not verified after session 2
 
@@ -38,6 +53,17 @@ Update this at the end of every working session.
 
 ### Found, not fixed
 
+- Back from the player goes to the home page instead of the title page.
+- The home page's top carousel: left/right do not change slide (all slides
+  share one position); down leaves it normally.
+- Moving down from a row that has been scrolled sideways lands on whichever
+  card is nearest on screen, not the same index. Row memory is still to do.
+- Player controls (subtitles, audio, next episode) are unreachable from the
+  remote: the ring is hidden in the player and there is no HUD yet.
+- `sendInputEvent` needs the window to have focus. Fine on a TV; a desktop
+  window in the background would ignore gamepad play/pause.
+- Gamepad play/pause and seek are untested with a physical controller.
+
 - Toasts for refused navigations are not rate-limited; a page that keeps
   trying to open other sites would keep showing them. Not seen on the live site.
 - VA-API hardware decode fails to initialise in the VM (virtio GPU); decode is
@@ -45,8 +71,10 @@ Update this at the end of every working session.
 
 ### Next actions (replaces the list at the bottom)
 
-1. Capture outlines from the live site and write adapter revision 1.
+1. Player controls from the remote (subtitles, audio, next episode) and Back
+   returning to the title page.
 2. TV scaling and row memory.
+3. Profile picker and sign-in pages with a remote (not looked at yet).
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)
 

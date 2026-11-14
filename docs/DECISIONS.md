@@ -137,3 +137,41 @@ or remote resources and its wording and look are original. The guard and the
 allowlist themselves are unchanged (Hard rule 10).
 **Reopen if:** the shell needs to tell the layer more than a line of text;
 design a typed message list like `BridgeMessage` rather than adding channels.
+
+## 2026-11-13: The player is controlled only by ordinary key presses
+
+**Decision:** the layer no longer calls `play()`, `pause()` or sets
+`currentTime` on the site's video element. For play/pause and seek it asks the
+shell to press Space, Left or Right with `webContents.sendInputEvent`; a
+physical Space or arrow key in the player is simply left for the site.
+`npm run check` now fails on code that controls a video element directly.
+**Reason:** found on the live site. The service plays advertisements inside
+the same video element as the programme. Setting `currentTime` could jump
+over one, which Hard rule 4 forbids, and calling `pause()`/`play()` behind the
+site's player left it out of step (playback would not resume). With key
+presses the site's player decides: during an advertisement it answered the
+seek key with its own "Unavailable" message; afterwards the same key moved
+ten seconds. Seen in an `--automation` run on 2026-11-13.
+**Cost:** the seek step is whatever the site uses, and a site whose player
+has no keyboard controls gets no seek from the layer.
+**Reopen if:** never for direct control. A future HUD may read position and
+duration, and click the site's own controls found through the adapter.
+
+## 2026-11-13: Adapter revision 1, and two new adapter keys
+
+**Decision:** `adapters/primevideo.json` revision 1 holds four selectors, each
+shown by a trimmed outline in `test/fixtures/outlines/` and checked by
+`test/adapter-evidence.test.ts`: the search input, the control that reveals
+it (`searchOpen`, new key), the element the player lives in (`playerRoot`,
+new key) and the "go ad free" upsell link as a purchase control.
+**Reason:** live testing showed the generic heuristics handle browsing well
+(cards, rows, sideways scrolling) but fail in three places: the search field
+is hidden until its button is clicked; a title page's full-width background
+trailer was taken for the player, so Enter paused the trailer instead of
+selecting; and the upsell link's wording is not in the spend-word list.
+**Left empty:** `playerClose`. The player's controls carry only hashed class
+names and masked ids in the outline, so there is no evidence-based selector;
+Back uses history, which leaves the player but lands on the home page rather
+than the title page.
+**Reopen if:** the site's markup changes (the evidence test only proves the
+selectors matched on the capture date).

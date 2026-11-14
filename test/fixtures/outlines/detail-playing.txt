@@ -1,0 +1,17 @@
+# Trimmed from an outline of the same detail page while the player was open, captured 2026-11-13.
+# Branches were cut and re-indented under one body; every line is as captured.
+# Structure only; checked by eye for names and titles.
+body
+  div.M6O0NK[data-automation-id="hero-background"]
+    div._jJdZN.uWihmC[data-testid="draper-player"]
+      div.draper-player-container[tabindex="-1"]
+        div.f1prfwap
+          div.:id.f1q6xino
+            div[tabindex="-1"]
+              video[aria-hidden="true"][src:68]
+  div#dv-web-player.dv-player-fullscreen[tabindex="-1"]
+    div.f1prfwap
+      div.:id.fk9ydtn
+        div[tabindex="-1"]
+          video[aria-hidden="true"][src:68]
+      div.:id.f1g7im4y.f1xr0j2q.fev5ez5.f1bwtfkz[aria-label:10]

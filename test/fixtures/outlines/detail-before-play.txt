@@ -1,0 +1,25 @@
+# Trimmed from an outline of a title's detail page on the live site, captured 2026-11-13 (signed in),
+# before playback: the background trailer, the play and upsell buttons, and the empty player container.
+# Branches were cut and re-indented under one body; every line is as captured.
+# Structure only; checked by eye for names and titles.
+body
+  div.M6O0NK[data-automation-id="hero-background"]
+    div._jJdZN.uWihmC[data-testid="draper-player"]
+      div.draper-player-container[tabindex="-1"]
+        div.f1prfwap
+          div.:id.f1q6xino
+            div[tabindex="-1"]
+              video[aria-hidden="true"][src:68]
+  div.ZsR2Ti
+    div.JpBnA4.BLmu_g.kSQSo5.kbkntC
+      div.ELbc4t[data-testid=":id"]
+        div.mVyVPA.BLmu_g.dv-dp-node-playback
+          a._1jWggM.BLmu_g._3_H2aX.fbl-play-btn.fbl-btn._2rwDjp._30G-ln._2sxYvx[aria-disabled="false"][data-testid="dp-atf-play-button"][data-automation-id="dp-atf-play-button"][role="button"][href:100]
+            span
+              span{text:16}
+      div
+        div.ELbc4t[data-testid=":id"]
+          span.BLmu_g
+            a._1jWggM.BLmu_g.dv-signup-button.fbl-btn._2rwDjp._2KSX1z._2sxYvx[aria-label:10][href:247]
+              span._36qUej{text:10}
+  div#dv-web-player[tabindex="-1"]
