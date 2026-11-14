@@ -172,6 +172,18 @@ try {
   await press('Escape');
   check('back closes the keyboard and then leaves the field', await evaluate('document.activeElement?.id ?? ""'), '');
 
+  // A pop-up the page opens takes the focus, keeps it, and gives it back.
+  for (let i = 0; i < 8 && (await focused()) !== 'info'; i++) await press('ArrowDown');
+  check('the pop-up button can be reached', await focused(), 'info');
+  await press('Enter');
+  await sleep(1200);
+  check('focus moves into the pop-up', ['dlg-close', 'dlg-ok'].includes(await focused()), true);
+  for (const key of ['ArrowUp', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowDown', 'ArrowDown']) await press(key);
+  check('and cannot leave it for the page behind', ['dlg-close', 'dlg-ok'].includes(await focused()), true);
+  await press('Escape');
+  await sleep(900);
+  check('Back closes the pop-up and focus returns to its button', [await evaluate('!!document.getElementById("dialog")'), await focused()], [false, 'info']);
+
   // A refused navigation must be visible: the page stays, a toast appears, the terminal says why.
   const toastText = async () => {
     const { root: tree } = await cdp.send('DOM.getDocument', { depth: -1, pierce: true });
