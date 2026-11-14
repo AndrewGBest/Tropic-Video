@@ -121,3 +121,19 @@ attach to that run and only read the report afterwards.
 redirects there, so later `--automation` runs should load.
 **Reopen if:** signed-in automation runs are also blocked; any narrowing of
 the URL pattern needs evidence from the live site and unit tests.
+
+## 2026-11-13: Refused navigations are shown by the shell, with one shell-to-layer message
+
+**Decision:** when the allowlist or the automation guard refuses a navigation,
+the main process logs it (reason, host and path; never the query), and either
+sends the layer one line of text to show as a toast (`tropic:notice`) or, if
+no page has loaded yet, loads a self-contained `data:` notice page.
+**Reason:** a refused first load left a blank black window that looked like a
+crash and cost a debugging session. The toast alone is not enough because it
+fades and because there may be no page to host it.
+**Constraints kept:** the message arrives in the preload's isolated world and
+nothing is exposed to the page (Hard rule 12). The notice page has no scripts
+or remote resources and its wording and look are original. The guard and the
+allowlist themselves are unchanged (Hard rule 10).
+**Reopen if:** the shell needs to tell the layer more than a line of text;
+design a typed message list like `BridgeMessage` rather than adding channels.

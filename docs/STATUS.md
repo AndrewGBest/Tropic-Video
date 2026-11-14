@@ -11,6 +11,11 @@ Update this at the end of every working session.
 - `VM-SETUP.md`: the first, signed-out spike run is hand-driven without
   `--automation`. Two entries added to `DECISIONS.md`.
 
+- Refused navigations are no longer silent (`src/main/navigation.ts`): the
+  terminal logs the reason with host and path only; a toast appears if a page
+  is on screen; if nothing has loaded yet, a built-in notice page replaces the
+  blank window. Fixed a race in the e2e Ctrl+Q step.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -22,6 +27,8 @@ Update this at the end of every working session.
 | The site loads and sign-in completes in the shell | Andrew's report plus the playback above |
 | Under `--automation` a signed-out start shows a blank window | DevTools: navigation cancelled; `curl`: home redirects to `/offers/nonprimehomepage`, which the guard's URL pattern blocks |
 | With the signed-in profile, an `--automation` run loads the home page | `--dev --automation` run probed over DevTools: document on the service's home URL, `readyState` complete, about 2,300 elements; no redirect to `/offers/` |
+| A refused navigation shows a toast and is logged without its query | e2e on the fixture; unit tests |
+| A start page refused before anything loads shows the notice page | e2e with a local redirecting server; and a fresh signed-out profile under `--automation` against the live site (text read over DevTools, screenshot looked at) |
 
 ### Still not verified after session 2
 
@@ -31,16 +38,15 @@ Update this at the end of every working session.
 
 ### Found, not fixed
 
-- A blocked navigation shows nothing: the window just stays black. It should
-  show a toast or at least log the blocked URL's path.
+- Toasts for refused navigations are not rate-limited; a page that keeps
+  trying to open other sites would keep showing them. Not seen on the live site.
 - VA-API hardware decode fails to initialise in the VM (virtio GPU); decode is
   in software there.
 
 ### Next actions (replaces the list at the bottom)
 
-1. Show something when a navigation is blocked.
-2. Capture outlines from the live site and write adapter revision 1.
-3. TV scaling and row memory.
+1. Capture outlines from the live site and write adapter revision 1.
+2. TV scaling and row memory.
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)
 

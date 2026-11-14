@@ -30,7 +30,14 @@ function isTextEntry(el: Element | null): boolean {
   return (el as HTMLElement).isContentEditable === true;
 }
 
-export function startLayer({ doc, options, adapter, send }: LayerDeps): { dispatch: (a: Action) => void; stop: () => void } {
+export interface Layer {
+  dispatch: (a: Action) => void;
+  /** Show a short message from the shell, for example that a navigation was refused. */
+  notice: (text: string) => void;
+  stop: () => void;
+}
+
+export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const view = doc.defaultView;
   if (!view) throw new Error('layer needs a window');
 
@@ -138,6 +145,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): { dispat
 
   return {
     dispatch,
+    notice: (text) => overlay.toast(text, 6000),
     stop: () => {
       view.removeEventListener('keydown', onKey, true);
       view.removeEventListener('mousemove', onPointer);

@@ -5,6 +5,7 @@
 // This is also the template for driving the app against the live site from a
 // machine that has a signed-in profile: same harness, different start URL.
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -133,6 +134,28 @@ try {
   const ua = await evaluate('navigator.userAgent');
   check('user agent hides nothing but the app tokens', /Electron|tropic-video/i.test(ua) === false && /Linux/.test(ua) && /Chrome\//.test(ua), true);
 
+  // A refused navigation must be visible: the page stays, a toast appears, the terminal says why.
+  const toastText = async () => {
+    const { root: tree } = await cdp.send('DOM.getDocument', { depth: -1, pierce: true });
+    const walk = (n) => {
+      const cls = n.attributes?.[n.attributes.indexOf('class') + 1] ?? '';
+      if (n.attributes?.includes('class') && /\btoast\b/.test(cls) && /\bshow\b/.test(cls)) {
+        return (n.children ?? []).map((c) => c.nodeValue ?? '').join('');
+      }
+      for (const c of [...(n.children ?? []), ...(n.shadowRoots ?? [])]) {
+        const hit = walk(c);
+        if (hit !== null) return hit;
+      }
+      return null;
+    };
+    return walk(tree);
+  };
+  await evaluate('location.href = "https://example.com/elsewhere?token=SECRET"; 0');
+  await sleep(500);
+  check('a link to another site does not load', await evaluate('location.protocol'), 'file:');
+  check('a blocked navigation shows a toast', await toastText(), 'Blocked: that link goes to another site');
+  check('a blocked navigation is logged without its query', [/blocked navigation \(other-site\): example\.com\/elsewhere\n/.test(appLog), appLog.includes('SECRET')], [true, false]);
+
   // Quit is handled by the main process, so it must work whatever the page is doing.
   const exited = new Promise((resolve) => child.once('exit', () => resolve(true)));
   const q = { key: 'q', code: 'KeyQ', windowsVirtualKeyCode: 81, nativeVirtualKeyCode: 81, modifiers: 2 };
@@ -148,6 +171,72 @@ try {
   child.kill();
   await sleep(300);
   rmSync(userData, { recursive: true, force: true });
+}
+
+// Second launch: the start page itself redirects somewhere automation refuses,
+// as the live site does for a signed-out visitor. The window must explain
+// itself instead of staying blank.
+{
+  const server = createServer((req, res) => {
+    if (req.url === '/') {
+      res.writeHead(302, { location: '/offers/landing?token=SECRET' }).end();
+    } else {
+      res.writeHead(200, { 'content-type': 'text/html' }).end('<!doctype html><title>should never load</title>');
+    }
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const port2 = port + 1;
+  const userData2 = mkdtempSync(join(tmpdir(), 'tropic-video-e2e-'));
+  let log2 = '';
+  const child2 = spawn(
+    electronPath,
+    [
+      root,
+      '--dev',
+      '--automation',
+      `--url=http://127.0.0.1:${server.address().port}/`,
+      `--remote-debugging-port=${port2}`,
+      `--user-data-dir=${userData2}`,
+      '--no-sandbox',
+      '--disable-gpu',
+    ],
+    { stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  child2.stdout.on('data', (d) => (log2 += d));
+  child2.stderr.on('data', (d) => (log2 += d));
+  try {
+    let page;
+    for (let i = 0; i < 100 && !page; i++) {
+      try {
+        const targets = await (await fetch(`http://127.0.0.1:${port2}/json/list`)).json();
+        page = targets.find((t) => t.type === 'page' && t.url.startsWith('data:'));
+      } catch {
+        // not listening yet
+      }
+      if (!page) await sleep(200);
+    }
+    check('a blocked start page is replaced by a notice page', !!page, true);
+    if (page) {
+      const cdp = await connect(page.webSocketDebuggerUrl);
+      const text = (await cdp.send('Runtime.evaluate', { expression: 'document.body.innerText', returnByValue: true })).result.value;
+      check(
+        'the notice names the blocked address, the cause and the way out, and no query',
+        [text.includes('/offers/landing'), text.includes('--automation'), text.includes('Ctrl+Q'), text.includes('SECRET')],
+        [true, true, true, false],
+      );
+      cdp.close();
+    }
+    check('the blocked start page is logged', /blocked navigation \(automation-spend\): 127\.0\.0\.1:\d+\/offers\/landing\n/.test(log2), true);
+    if (failures) appLog += `\n--- second launch ---\n${log2}`;
+  } catch (err) {
+    failures += 1;
+    console.error(String(err));
+  } finally {
+    child2.kill();
+    server.close();
+    await sleep(300);
+    rmSync(userData2, { recursive: true, force: true });
+  }
 }
 
 if (failures) {

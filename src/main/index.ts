@@ -4,8 +4,8 @@ import * as electron from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { BridgeMessage, LayerOptions, SpikeEvent } from '../shared/actions';
-import { looksLikeSpendUrl } from '../layer/guard/purchase-guard';
 import { browserUserAgent, isAllowedUrl } from './hosts';
+import { blockReason, blockedMessage, describeBlockedUrl, noticePageUrl } from './navigation';
 
 const HOME_URL = 'https://www.primevideo.com/';
 const argv = process.argv.slice(1);
@@ -93,11 +93,28 @@ function createWindow(): BrowserWindow {
   wc.on('render-process-gone', (_e, details) => {
     console.error(`[tropic-video] renderer exited: ${details.reason}`);
   });
+
+  // True once a real page has been shown. Until then a refused navigation
+  // would leave the window blank, so a notice page is loaded instead.
+  let pageShown = false;
+  wc.on('did-navigate', (_e, url) => {
+    if (!url.startsWith('data:') && url !== 'about:blank') pageShown = true;
+  });
+
+  /** Returns true when `url` may load. A refusal is always logged and shown, never silent. */
   const allowed = (url: string): boolean => {
-    if (!isAllowedUrl(url, { dev: options.dev })) return false;
-    // Automation must never reach a payment or sign-up flow, even by URL.
-    if (options.automation && looksLikeSpendUrl(url)) return false;
-    return true;
+    const reason = blockReason(url, options);
+    if (!reason) return true;
+    console.error(`[tropic-video] blocked navigation (${reason}): ${describeBlockedUrl(url)}`);
+    if (pageShown) {
+      wc.send('tropic:notice', blockedMessage(reason));
+    } else {
+      // Deferred so the refused navigation is fully cancelled first.
+      setImmediate(() => {
+        if (!wc.isDestroyed() && !pageShown) void wc.loadURL(noticePageUrl(reason, url));
+      });
+    }
+    return false;
   };
 
   wc.on('will-navigate', (e, url) => {

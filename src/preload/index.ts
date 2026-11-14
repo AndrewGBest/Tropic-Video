@@ -4,7 +4,7 @@
 import { ipcRenderer } from 'electron';
 import type { BridgeMessage, LayerOptions } from '../shared/actions';
 import { parseAdapter } from '../layer/adapter/adapter';
-import { startLayer } from '../layer/index';
+import { startLayer, type Layer } from '../layer/index';
 
 const ARG_PREFIX = '--tropic-boot=';
 
@@ -22,10 +22,18 @@ function readBoot(): { options: LayerOptions; adapter: unknown } {
 const boot = readBoot();
 const send = (msg: BridgeMessage): void => ipcRenderer.send('tropic:msg', msg);
 
+let layer: Layer | undefined;
+
+// The shell's only message to the layer: a line of text to show. It arrives in
+// the isolated world; the page's own scripts never see it.
+ipcRenderer.on('tropic:notice', (_event, text: unknown) => {
+  if (typeof text === 'string') layer?.notice(text.slice(0, 200));
+});
+
 const start = (): void => {
   // Only the top frame gets a layer; embedded frames are left alone.
   if (window.top !== window) return;
-  startLayer({
+  layer = startLayer({
     doc: document,
     options: boot.options,
     adapter: parseAdapter(boot.adapter, document),
