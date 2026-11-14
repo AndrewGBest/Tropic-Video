@@ -14,6 +14,7 @@ describe('purchase guard', () => {
   it.each([
     '<button id="t">Rent HD $4.99</button>',
     '<button id="t">Buy movie</button>',
+    '<button id="t">Go ad free</button>',
     '<a id="t" href="/x">Start your free trial</a>',
     '<button><span id="t">Subscribe</span></button>',
     '<div role="button" id="t" aria-label="Pre-order now"></div>',

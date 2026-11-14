@@ -1,14 +1,14 @@
 // Entry point of the page-side layer. Runs in the preload's isolated world:
 // it shares the DOM with the site but not its JavaScript, so the site cannot
 // tamper with it and it does not modify the site's own scripts.
-import type { Action, BridgeMessage, LayerOptions } from '../shared/actions';
+import type { Action, BridgeMessage, Direction, LayerOptions } from '../shared/actions';
 import { firstMatch, type SiteAdapter } from './adapter/adapter';
 import { buildOutline, sanitizeUrl } from './diagnostics/outline';
 import { installPurchaseGuard } from './guard/purchase-guard';
 import { startPolling } from './input/gamepad';
 import { keyToAction, type Mode } from './input/keys';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
-import { findMainVideo, isPlayerActive } from './player';
+import { findMainVideo, isPlayerActive, playerScope } from './player';
 import { isVisible, SpatialNavigator } from './spatial/navigator';
 import { HOST_TAG, Overlay } from './ui/overlay';
 import { installSpikeProbes } from './spike';
@@ -42,18 +42,40 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const view = doc.defaultView;
   if (!view) throw new Error('layer needs a window');
 
+  const playerRoots = adapter.selectors.playerRoot;
+  const inPlayer = (): boolean => isPlayerActive(doc, playerRoots);
+  /** While the player is open, focus stays among its own controls. */
+  const scope = (): Element | null => {
+    if (!inPlayer()) return null;
+    const v = findMainVideo(doc, playerRoots);
+    return v ? playerScope(v, playerRoots) : null;
+  };
+
   const overlay = new Overlay(doc);
   const nav = new SpatialNavigator(doc, {
     extraFocusable: adapter.selectors.extraFocusable,
     ignoreWithin: HOST_TAG,
     onFocusChange: (el) => overlay.track(el),
+    scope,
   });
 
-  const playerRoots = adapter.selectors.playerRoot;
-  const inPlayer = (): boolean => isPlayerActive(doc, playerRoots);
+  /**
+   * True while the user is on one of the player's own controls (reached with
+   * up or down). The controls hide themselves after a while; focus is dropped
+   * when that happens, which returns the keys to playback.
+   */
+  const onPlayerControl = (): boolean => {
+    const f = nav.focused;
+    if (!f) return false;
+    if (scope()?.contains(f) && isVisible(f, view)) return true;
+    nav.clear();
+    return false;
+  };
+
   const mode = (): Mode => {
     if (isTextEntry(doc.activeElement)) return 'text';
-    return inPlayer() ? 'player' : 'browse';
+    if (!inPlayer()) return 'browse';
+    return onPlayerControl() ? 'browse' : 'player';
   };
 
   // Player control is a real key press made by the shell, so the site's own
@@ -67,6 +89,31 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     send({ kind: 'playerKey', key });
   };
 
+  // Up or down in the player: show the site's controls (they appear when the
+  // pointer moves) and put focus on the nearest one in that direction.
+  let ignorePointerUntil = 0;
+  let controlsTimer: number | undefined;
+  const revealControls = (): void => {
+    ignorePointerUntil = Date.now() + 500;
+    send({ kind: 'revealControls' });
+  };
+  const moveInPlayer = (dir: Direction): void => {
+    revealControls();
+    if (onPlayerControl()) {
+      nav.move(dir);
+      return;
+    }
+    // The controls are created and faded in after the pointer moves; wait for them.
+    let tries = 0;
+    view.clearInterval(controlsTimer);
+    controlsTimer = view.setInterval(() => {
+      const done = !inPlayer() || (nav.candidates().length > 0 && nav.moveFrom({ x: view.innerWidth / 2, y: view.innerHeight / 2 }, dir));
+      if (done || ++tries >= 15) view.clearInterval(controlsTimer);
+    }, 100);
+  };
+
+  let closeTimer: number | undefined;
+  let lastCloseAt = 0;
   const back = (): void => {
     const active = doc.activeElement;
     if (isTextEntry(active)) {
@@ -74,11 +121,33 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       return;
     }
     if (inPlayer()) {
+      // First Back leaves the controls and returns to the picture.
+      if (onPlayerControl()) {
+        nav.clear();
+        return;
+      }
       const close = firstMatch(doc, adapter.selectors.playerClose);
       if (close) {
         (close as HTMLElement).click();
         return;
       }
+      // Ask the site's player to close itself. History is the fallback, used
+      // only when the picture is plainly still running a while later, or when
+      // Back is pressed again: a closing player can linger for a moment, and
+      // going back then would leave the title page as well.
+      const again = Date.now() - lastCloseAt < 5000;
+      lastCloseAt = Date.now();
+      view.clearTimeout(closeTimer);
+      if (again) {
+        if (view.history.length > 1) view.history.back();
+        return;
+      }
+      pressPlayerKey('close');
+      closeTimer = view.setTimeout(() => {
+        const v = findMainVideo(doc, playerRoots);
+        if (v && !v.paused && view.history.length > 1) view.history.back();
+      }, 2500);
+      return;
     }
     if (view.history.length > 1) view.history.back();
   };
@@ -119,7 +188,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     doc.documentElement.classList.add('tropic-no-pointer');
     switch (a.type) {
       case 'move':
-        nav.move(a.dir);
+        if (inPlayer()) moveInPlayer(a.dir);
+        else nav.move(a.dir);
         break;
       case 'select':
         if (!nav.activate()) nav.move('down');
@@ -166,7 +236,11 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
   view.addEventListener('keydown', onKey, true);
 
-  const onPointer = (): void => doc.documentElement.classList.remove('tropic-no-pointer');
+  const onPointer = (): void => {
+    // The shell's own nudge (see revealControls) is not the user reaching for a mouse.
+    if (Date.now() < ignorePointerUntil) return;
+    doc.documentElement.classList.remove('tropic-no-pointer');
+  };
   view.addEventListener('mousemove', onPointer, { passive: true });
 
   const stopPads = startPolling(view, mode, dispatch);
@@ -176,8 +250,10 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const playbackTimer = view.setInterval(() => {
     const v = findMainVideo(doc, playerRoots);
     const playing = !!v && !v.paused && !v.ended;
-    // The focus ring belongs to browsing; it must not sit on top of the picture.
-    if (playing) overlay.track(null);
+    // Focus left over from the page behind must not carry into the player, and
+    // the ring must not sit on the picture unless the user is on a control.
+    if (playing && !lastPlaying) nav.clear();
+    else if (playing && !onPlayerControl()) overlay.track(null);
     if (playing !== lastPlaying) {
       lastPlaying = playing;
       send({ kind: 'playback', playing });
@@ -200,6 +276,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       view.removeEventListener('mousemove', onPointer);
       view.clearInterval(playbackTimer);
       view.clearInterval(searchPoll);
+      view.clearInterval(controlsTimer);
+      view.clearTimeout(closeTimer);
       stopPads();
       stopGuard();
       stopSpike();

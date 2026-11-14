@@ -58,3 +58,29 @@ export function isPlayerActive(doc: Document, playerRoots: readonly string[] = [
   const v = findMainVideo(doc, playerRoots);
   return !!v && (!v.paused || v.currentTime > 0) && v.readyState > 0;
 }
+
+/**
+ * The element holding the player and its controls: the adapter's root when it
+ * contains the video, otherwise the highest ancestor that is no bigger than
+ * the viewport (the page behind a full-window player is taller or absent).
+ */
+export function playerScope(video: HTMLVideoElement, playerRoots: readonly string[] = []): Element {
+  for (const sel of playerRoots) {
+    try {
+      const root = video.closest(sel);
+      if (root) return root;
+    } catch {
+      // ignore a bad selector
+    }
+  }
+  const view = video.ownerDocument.defaultView;
+  const maxW = (view?.innerWidth ?? 0) + 2;
+  const maxH = (view?.innerHeight ?? 0) + 2;
+  let scope: Element = video.parentElement ?? video;
+  for (let el = scope.parentElement; el && el !== video.ownerDocument.body; el = el.parentElement) {
+    const r = el.getBoundingClientRect();
+    if (r.width > maxW || r.height > maxH) break;
+    scope = el;
+  }
+  return scope;
+}

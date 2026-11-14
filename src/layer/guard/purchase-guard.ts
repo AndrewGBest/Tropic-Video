@@ -3,7 +3,7 @@
 // subscription. Ordinary users are never affected: this is only installed in
 // automation mode.
 const SPEND_WORDS =
-  /\b(buy|rent|purchase|pre-?order|subscribe|subscription|free trial|start (your )?trial|join prime|sign up|upgrade|add to (cart|basket)|place (your )?order|pay now|checkout|1-click)\b/i;
+  /\b(buy|rent|purchase|pre-?order|subscribe|subscription|free trial|start (your )?trial|join prime|sign up|upgrade|(go )?ad[- ]free|add to (cart|basket)|place (your )?order|pay now|checkout|1-click)\b/i;
 
 /** URL fragments that indicate a payment or sign-up flow. Heuristic until confirmed on the live site. */
 const SPEND_URL = /(checkout|\/buy\b|\/gp\/buy|purchase|signup|sign-up|\/offers?\b|subscribe|payment)/i;

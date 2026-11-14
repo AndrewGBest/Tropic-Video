@@ -3,7 +3,7 @@
 // site's own player, which is what decides whether a seek is allowed (for
 // example during an advertisement). Instead the layer asks the shell to press
 // a real key, and the site's player handles it like any other key press.
-export type PlayerKey = 'playPause' | 'seekBack' | 'seekForward';
+export type PlayerKey = 'playPause' | 'seekBack' | 'seekForward' | 'close';
 
 interface KeyInfo {
   /** Electron accelerator-style key code for `webContents.sendInputEvent`. */
@@ -16,6 +16,7 @@ const KEYS: Record<PlayerKey, KeyInfo> = {
   playPause: { code: 'Space', domKey: ' ' },
   seekBack: { code: 'Left', domKey: 'ArrowLeft' },
   seekForward: { code: 'Right', domKey: 'ArrowRight' },
+  close: { code: 'Escape', domKey: 'Escape' },
 };
 
 /** The player key an action stands for, if any. */

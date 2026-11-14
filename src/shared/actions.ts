@@ -22,6 +22,8 @@ export type BridgeMessage =
   | { kind: 'exit' }
   | { kind: 'playback'; playing: boolean }
   | { kind: 'playerKey'; key: PlayerKey }
+  /** Ask the shell to move the pointer a little, which makes a site's player show its controls. */
+  | { kind: 'revealControls' }
   | { kind: 'diagnostics'; outline: string; url: string }
   | { kind: 'spike'; event: SpikeEvent };
 

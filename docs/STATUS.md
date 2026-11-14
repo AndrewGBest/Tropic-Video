@@ -24,6 +24,10 @@ Update this at the end of every working session.
   outline from the live site had carried the profile name in a test id; it was
   never committed.
 - The focus ring is hidden while video plays.
+- In the player, up or down shows the site's own controls and moves focus onto
+  them; arrows then move between controls and Enter activates one. Back first
+  returns to the picture, then closes the player with the site's own Escape
+  handling (history is only the fallback).
 
 ### Verified in session 2, and how
 
@@ -43,7 +47,8 @@ Update this at the end of every working session.
 | On a title page the background trailer no longer puts the layer in player mode | same run: arrows moved focus through the page's buttons |
 | The upsell link is blocked under automation | same run: Enter on it left the page unchanged |
 | Space and Enter pause and resume; Left/Right seek ten seconds; during an advertisement the site refuses the seek | same run: video element state read before and after each key; screenshot of the site's "Unavailable" message |
-| Back leaves the player | same run; it lands on the home page, not the title page |
+| Back closes the player and returns to the title page | later run: Escape handled by the site's player; path stayed on the title page |
+| Up/down in the player reveal the site's controls and focus them; arrows walk both control rows; Enter activates (tested on mute) | later run, focus position read after each key, four reveals out of four |
 
 ### Still not verified after session 2
 
@@ -53,13 +58,15 @@ Update this at the end of every working session.
 
 ### Found, not fixed
 
-- Back from the player goes to the home page instead of the title page.
+- The player's controls hide about five seconds after the last key, and focus
+  is then dropped; the next up/down starts again from the middle.
+- Up from the player's bottom row lands on the volume slider, not the button.
+  The seek bar itself is not reachable (left/right seek instead).
 - The home page's top carousel: left/right do not change slide (all slides
   share one position); down leaves it normally.
 - Moving down from a row that has been scrolled sideways lands on whichever
   card is nearest on screen, not the same index. Row memory is still to do.
-- Player controls (subtitles, audio, next episode) are unreachable from the
-  remote: the ring is hidden in the player and there is no HUD yet.
+- Menus opened from player controls (subtitles, audio) have not been walked.
 - `sendInputEvent` needs the window to have focus. Fine on a TV; a desktop
   window in the background would ignore gamepad play/pause.
 - Gamepad play/pause and seek are untested with a physical controller.
@@ -71,9 +78,8 @@ Update this at the end of every working session.
 
 ### Next actions (replaces the list at the bottom)
 
-1. Player controls from the remote (subtitles, audio, next episode) and Back
-   returning to the title page.
-2. TV scaling and row memory.
+1. TV scaling and row memory.
+2. Walk the player's subtitle and audio menus; next-episode and skip prompts.
 3. Profile picker and sign-in pages with a remote (not looked at yet).
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)

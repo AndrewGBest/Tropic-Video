@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { findMainVideo, isPlayerActive } from '../src/layer/player';
+import { findMainVideo, isPlayerActive, playerScope } from '../src/layer/player';
+import { SpatialNavigator } from '../src/layer/spatial/navigator';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo } from '../src/shared/player-keys';
 
 // jsdom has no layout, so each test gives its videos a size by hand.
@@ -58,10 +59,11 @@ describe('findMainVideo', () => {
 });
 
 describe('player keys', () => {
-  it('maps only the three known keys', () => {
+  it('maps only the known keys', () => {
     expect(playerKeyInfo('playPause')).toEqual({ code: 'Space', domKey: ' ' });
     expect(playerKeyInfo('seekBack')?.code).toBe('Left');
     expect(playerKeyInfo('seekForward')?.code).toBe('Right');
+    expect(playerKeyInfo('close')).toEqual({ code: 'Escape', domKey: 'Escape' });
     for (const bad of ['Enter', 'toString', '__proto__', '', 5, null, undefined, {}]) {
       expect(playerKeyInfo(bad)).toBeNull();
     }
@@ -95,5 +97,40 @@ describe('player keys', () => {
     const k = new InjectedKeys(1000);
     k.expect('ArrowRight', 0);
     expect(k.consume('ArrowRight', 1001)).toBe(false);
+  });
+});
+
+describe('player scope', () => {
+  const size = (el: Element, w: number, h: number, left = 0, top = 0): void => {
+    el.getBoundingClientRect = () => ({ width: w, height: h, left, top, right: left + w, bottom: top + h, x: left, y: top, toJSON: () => ({}) });
+  };
+
+  it('is the adapter root when the video is inside it', () => {
+    mount(`<div id="player"><div>${video('real', 1280, 720)}</div></div>`);
+    const v = document.getElementById('real') as HTMLVideoElement;
+    expect(playerScope(v, ['#player']).id).toBe('player');
+  });
+
+  it('without an adapter, climbs to the highest ancestor that fits the viewport', () => {
+    mount(`<main id="page"><div id="shell"><div id="inner">${video('real', 1280, 720)}</div></div></main>`);
+    size(document.getElementById('inner')!, 1280, 720);
+    size(document.getElementById('shell')!, 1280, 720);
+    size(document.getElementById('page')!, 1280, 3000);
+    const v = document.getElementById('real') as HTMLVideoElement;
+    expect(playerScope(v).id).toBe('shell');
+  });
+
+  it('keeps navigation inside the scope and can start from a point', () => {
+    mount(`<a href="#x" id="behind">x</a><div id="player"><button id="left">a</button><button id="mid">b</button></div>`);
+    size(document.getElementById('behind')!, 100, 40, 600, 300);
+    size(document.getElementById('left')!, 40, 40, 100, 650);
+    size(document.getElementById('mid')!, 40, 40, 620, 650);
+    Element.prototype.scrollIntoView = () => undefined; // jsdom has none
+    const nav = new SpatialNavigator(document, { scope: () => document.getElementById('player') });
+    expect(nav.candidates().map((e) => e.id)).toEqual(['left', 'mid']);
+    expect(nav.moveFrom({ x: 640, y: 360 }, 'down')).toBe(true);
+    expect(nav.focused?.id).toBe('mid');
+    nav.move('left');
+    expect(nav.focused?.id).toBe('left');
   });
 });

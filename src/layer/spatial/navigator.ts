@@ -24,6 +24,8 @@ export interface NavigatorOptions {
   /** Elements the layer itself owns; never candidates. */
   ignoreWithin?: string;
   onFocusChange?: (el: Element | null) => void;
+  /** When it returns an element, only candidates inside that element are considered. */
+  scope?: () => Element | null;
 }
 
 export function isVisible(el: Element, view: Window): boolean {
@@ -57,8 +59,9 @@ export class SpatialNavigator {
     const view = this.doc.defaultView;
     if (!view) return [];
     const selector = [FOCUSABLE, ...(this.opts.extraFocusable ?? [])].join(',');
+    const scope = this.opts.scope?.() ?? null;
     const seen = new Set<Element>();
-    for (const el of this.doc.querySelectorAll(selector)) {
+    for (const el of (scope ?? this.doc).querySelectorAll(selector)) {
       if (this.opts.ignoreWithin && el.closest(this.opts.ignoreWithin)) continue;
       if (!isVisible(el, view)) continue;
       seen.add(el);
@@ -79,6 +82,14 @@ export class SpatialNavigator {
     const i = pickNext(toRect(from), others.map(toRect), dir);
     if (i === -1) return false;
     return this.focus(others[i] ?? null);
+  }
+
+  /** Moves from a point on screen rather than from the focused element. Falls back to the first candidate. */
+  moveFrom(point: { x: number; y: number }, dir: Direction): boolean {
+    const all = this.candidates();
+    const from: Rect = { left: point.x, top: point.y, right: point.x, bottom: point.y };
+    const i = pickNext(from, all.map(toRect), dir);
+    return this.focus(all[i === -1 ? pickInitial(all.map(toRect)) : i] ?? null);
   }
 
   focus(el: Element | null): boolean {

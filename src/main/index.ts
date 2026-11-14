@@ -141,6 +141,7 @@ function createWindow(): BrowserWindow {
 
 function wireMessages(): void {
   let blocker: number | undefined;
+  let nudge = false;
   ipcMain.on('tropic:msg', (event, msg: BridgeMessage) => {
     // Only the top frame of our own window may talk to the shell.
     if (event.senderFrame !== event.sender.mainFrame) return;
@@ -154,6 +155,29 @@ function wireMessages(): void {
         if (info) {
           event.sender.sendInputEvent({ type: 'keyDown', keyCode: info.code });
           event.sender.sendInputEvent({ type: 'keyUp', keyCode: info.code });
+        }
+        break;
+      }
+      case 'revealControls': {
+        // An ordinary pointer movement across the middle of the picture. One
+        // step is not enough on the live site, and steps sent together are
+        // merged into one, so it is a short sweep spread over time, in
+        // alternating directions so every call is a real movement.
+        const size = BrowserWindow.fromWebContents(event.sender)?.getContentSize();
+        if (size) {
+          nudge = !nudge;
+          const [w = 0, h = 0] = size;
+          const steps = nudge ? [0, 20, 40, 60] : [60, 40, 20, 0];
+          const wc = event.sender;
+          steps.forEach((dx, i) => {
+            setTimeout(() => {
+              if (wc.isDestroyed()) return;
+              const x = Math.round(w / 2) + dx;
+              const y = Math.round(h / 2);
+              // A real pointer reports how far it moved; some players ignore a move that reports zero.
+              wc.sendInputEvent({ type: 'mouseMove', x, y, globalX: x, globalY: y, movementX: nudge ? 20 : -20, movementY: 0 });
+            }, i * 40);
+          });
         }
         break;
       }

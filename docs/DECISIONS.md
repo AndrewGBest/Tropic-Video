@@ -175,3 +175,18 @@ Back uses history, which leaves the player but lands on the home page rather
 than the title page.
 **Reopen if:** the site's markup changes (the evidence test only proves the
 selectors matched on the capture date).
+
+## 2026-11-14: Player controls are the site's own, reached by revealing them
+
+**Decision:** there is no separate HUD yet. Up or down in the player asks the
+shell to sweep the pointer a few pixels across the picture, which makes the
+site's player show its controls; the layer then moves its focus ring among
+those controls, scoped to the player. Back closes the player by sending the
+site an Escape key press; `history.back()` is only a fallback.
+**Reason:** it keeps to ordinary input (Hard rule 4), needs no selectors for
+the controls (their class names are hashed and unstable), and gives the
+remote every control the site offers, including ones added later.
+**Found on the way:** the pointer sweep must be several movements spread over
+time; movements sent together are merged into one and the site ignores it.
+**Reopen if:** the controls' five-second auto-hide makes this too fiddly on a
+real remote; then build the HUD from DESIGN.md on top of the same key presses.
