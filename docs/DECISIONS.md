@@ -190,3 +190,16 @@ remote every control the site offers, including ones added later.
 time; movements sent together are merged into one and the site ignores it.
 **Reopen if:** the controls' five-second auto-hide makes this too fiddly on a
 real remote; then build the HUD from DESIGN.md on top of the same key presses.
+
+## 2026-11-14: TV scaling is ordinary page zoom to a 720-high viewport
+
+**Decision:** the shell sets the page zoom so the site sees a viewport about
+720 CSS pixels high (1.5 at 1080p, 2 at 1440p, 3 at 4K, never below 1).
+`--zoom=<factor>` overrides it.
+**Reason:** at 1280x720 the live site lays out about four cards to a row with
+large text, which reads well from a couch. Zoom is the browser's own feature,
+so the site lays itself out and nothing of its styling is rewritten (Hard
+rule 4), and it needs no selectors.
+**Not verified:** the automatic value on a real 1080p or 4K screen.
+**Reopen if:** the site switches to a phone layout at the zoomed width, or
+Andrew prefers a different density on a real TV; change the target height.

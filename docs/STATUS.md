@@ -29,6 +29,11 @@ Update this at the end of every working session.
   returns to the picture, then closes the player with the site's own Escape
   handling (history is only the fallback).
 
+- TV scaling: page zoom chosen so the site sees a 720-high viewport
+  (`src/main/zoom.ts`); `--zoom=<factor>` overrides, `--zoom=1` turns it off.
+- Row memory: entering a sideways-scrolling row goes to where you last were in
+  it, or to its first card on screen.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -49,8 +54,13 @@ Update this at the end of every working session.
 | Space and Enter pause and resume; Left/Right seek ten seconds; during an advertisement the site refuses the seek | same run: video element state read before and after each key; screenshot of the site's "Unavailable" message |
 | Back closes the player and returns to the title page | later run: Escape handled by the site's player; path stayed on the title page |
 | Up/down in the player reveal the site's controls and focus them; arrows walk both control rows; Enter activates (tested on mute) | later run, focus position read after each key, four reveals out of four |
+| Row memory on the live home page | run at `--zoom=1.25`: fresh row entered at its first card, earlier rows re-entered at the remembered card |
+| Zoom applies and the ring, player controls and Back still line up | same run: viewport 1024x576, screenshot looked at, player controls focused, Back stayed on the title page |
 
 ### Still not verified after session 2
+
+- Automatic zoom on a real 1080p or 4K screen (only the override was run, in a
+  1280x720 window).
 
 - Any resolution above 960x540, and playback on bare metal.
 - Everything else in the "NOT verified" list below except the first item and
@@ -64,8 +74,6 @@ Update this at the end of every working session.
   The seek bar itself is not reachable (left/right seek instead).
 - The home page's top carousel: left/right do not change slide (all slides
   share one position); down leaves it normally.
-- Moving down from a row that has been scrolled sideways lands on whichever
-  card is nearest on screen, not the same index. Row memory is still to do.
 - Menus opened from player controls (subtitles, audio) have not been walked.
 - `sendInputEvent` needs the window to have focus. Fine on a TV; a desktop
   window in the background would ignore gamepad play/pause.
@@ -78,9 +86,9 @@ Update this at the end of every working session.
 
 ### Next actions (replaces the list at the bottom)
 
-1. TV scaling and row memory.
-2. Walk the player's subtitle and audio menus; next-episode and skip prompts.
-3. Profile picker and sign-in pages with a remote (not looked at yet).
+1. Walk the player's subtitle and audio menus; next-episode and skip prompts.
+2. The home page's top carousel; profile picker and sign-in pages with a remote.
+3. Packaging: build and launch an AppImage; let CI run on GitHub.
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)
 
@@ -151,7 +159,7 @@ Update this at the end of every working session.
 
 ### Known gaps and rough edges
 
-- No TV scaling yet; the site renders at desktop size.
+- (Resolved in session 2: TV scaling.)
 - `settings` action only shows a toast.
 - Back in the player relies on history unless the adapter supplies a close control.
 - The spend-word list will over-block in automation (for example "Sign up" links).

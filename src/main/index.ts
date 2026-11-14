@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import type { BridgeMessage, LayerOptions, SpikeEvent } from '../shared/actions';
 import { playerKeyInfo } from '../shared/player-keys';
 import { browserUserAgent, isAllowedUrl } from './hosts';
+import { tvZoom } from './zoom';
 import { blockReason, blockedMessage, describeBlockedUrl, noticePageUrl } from './navigation';
 
 const HOME_URL = 'https://www.primevideo.com/';
@@ -129,6 +130,17 @@ function createWindow(): BrowserWindow {
     if (allowed(url)) void wc.loadURL(url);
     return { action: 'deny' };
   });
+
+  // TV scaling: ordinary page zoom, chosen from the window's height (see zoom.ts).
+  const applyZoom = (): void => {
+    if (win.isDestroyed()) return;
+    const zoom = tvZoom(win.getContentSize()[1] ?? 0, value('zoom'));
+    if (Math.abs(wc.getZoomFactor() - zoom) > 0.001) wc.setZoomFactor(zoom);
+  };
+  wc.on('did-navigate', applyZoom);
+  win.on('resize', applyZoom);
+  win.on('enter-full-screen', applyZoom);
+  win.on('leave-full-screen', applyZoom);
 
   const tvCss = readFileSync(join(__dirname, 'tv.css'), 'utf8');
   wc.on('dom-ready', () => {
