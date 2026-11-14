@@ -29,8 +29,8 @@ Update this at the end of every working session.
   returns to the picture, then closes the player with the site's own Escape
   handling (history is only the fallback).
 
-- TV scaling: page zoom chosen so the site sees a 540-high viewport, 2x at
-  1080p (`src/main/zoom.ts`); `--zoom=<factor>` overrides, `--zoom=1` turns it
+- TV scaling: page zoom chosen so the site sees a viewport of at least
+  960x540, 2x at 1080p (`src/main/zoom.ts`); `--zoom=<factor>` overrides, `--zoom=1` turns it
   off. The layer's toast and the notice page use couch-sized type.
 - Row memory: entering a sideways-scrolling row goes to where you last were in
   it, or to its first card on screen.
@@ -71,8 +71,8 @@ Update this at the end of every working session.
 - The release workflow (never run), the tarball, and how the icon looks in a
   desktop launcher.
 
-- Automatic zoom on a real 1080p or 4K screen (only the override was run, in a
-  1280x720 window).
+- Automatic zoom on a real 1080p or 4K screen. It was run fullscreen on this
+  VM's 1280x800 display (zoom 1.33, viewport 962x601, full navigation bar).
 
 - Any resolution above 960x540, and playback on bare metal.
 - Everything else in the "NOT verified" list below except the first item and

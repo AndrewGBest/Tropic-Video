@@ -4,23 +4,30 @@
 // the page is rewritten.
 
 /**
- * The viewport height, in CSS pixels, the site should think it has. 540 makes
- * a 1080p screen a 960x540 canvas, the usual size for couch-distance layouts;
- * the live site still shows four cards to a row there, with larger text.
+ * The viewport, in CSS pixels, the site should think it has. 960x540 is the
+ * usual canvas for couch-distance layouts (a 1080p screen at 2x). On the live
+ * site it still shows the full navigation bar and four cards to a row; at 865
+ * wide (seen on a 16:10 screen) the site collapses its navigation into a
+ * menu, so the width is a floor as well as the height.
  */
-export const TARGET_VIEWPORT_HEIGHT = 540;
+export const TARGET_VIEWPORT = { width: 960, height: 540 } as const;
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 4;
 
 /**
- * Zoom factor for a window whose content area is `contentHeight` DIPs tall.
+ * Zoom factor for a window whose content area is `content` DIPs.
+ * The viewport after zooming is never smaller than the target in either
+ * direction, and a small window is never zoomed out (minimum 1).
  * `override` is the user's `--zoom=` value: a positive number, or absent.
- * Never below 1: a small window is not made smaller still.
  */
-export function tvZoom(contentHeight: number, override?: string): number {
+export function tvZoom(content: { width: number; height: number }, override?: string): number {
   const forced = override === undefined ? NaN : Number(override);
-  const raw = Number.isFinite(forced) && forced > 0 ? forced : contentHeight / TARGET_VIEWPORT_HEIGHT;
+  const raw =
+    Number.isFinite(forced) && forced > 0
+      ? forced
+      : Math.min(content.width / TARGET_VIEWPORT.width, content.height / TARGET_VIEWPORT.height);
   if (!Number.isFinite(raw)) return MIN_ZOOM;
-  // Two decimals: avoids relayout churn from tiny changes while a window is resized.
-  return Math.round(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, raw)) * 100) / 100;
+  // Rounded down to two decimals: never zooms past the target, and avoids
+  // relayout churn from tiny changes while a window is resized.
+  return Math.floor(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, raw)) * 100 + 1e-6) / 100;
 }

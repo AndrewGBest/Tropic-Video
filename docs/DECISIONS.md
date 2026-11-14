@@ -223,3 +223,13 @@ service's own website, shown as it serves it; everything the layer adds is
 original.
 **Reopen if:** on a real TV the 540 target is too large or too small; change
 `TARGET_VIEWPORT_HEIGHT`, or use `--zoom=`.
+
+## 2026-11-14: The zoom target has a width floor as well
+
+**Decision:** zoom is the smaller of width/960 and height/540, rounded down.
+**Reason:** fullscreen on a 1280x800 display, scaling by height alone left
+the site a viewport 865 wide and it collapsed its navigation bar into a
+"Menu" dropdown with three cards to a row. At 962 wide it shows the full bar.
+The exact width where the site switches was not measured; it is somewhere
+between 865 and 962.
+**Reopen if:** the site moves that breakpoint above 960.

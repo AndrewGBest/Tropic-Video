@@ -134,7 +134,8 @@ function createWindow(): BrowserWindow {
   // TV scaling: ordinary page zoom, chosen from the window's height (see zoom.ts).
   const applyZoom = (): void => {
     if (win.isDestroyed()) return;
-    const zoom = tvZoom(win.getContentSize()[1] ?? 0, value('zoom'));
+    const [width = 0, height = 0] = win.getContentSize();
+    const zoom = tvZoom({ width, height }, value('zoom'));
     if (Math.abs(wc.getZoomFactor() - zoom) > 0.001) wc.setZoomFactor(zoom);
   };
   wc.on('did-navigate', applyZoom);
