@@ -209,6 +209,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
 
   /** Moves focus into a pop-up that has opened, if it is not there already. */
+  let openToggle: { label: HTMLLabelElement; input: HTMLInputElement } | null = null;
   let beforeDialog: Element | null = null;
   let dialogTimer: number | undefined;
   const enterDialog = (): boolean => {
@@ -274,6 +275,15 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     if (isTextEntry(active)) {
       (active as HTMLElement).blur();
       return;
+    }
+    if (openToggle) {
+      const { label, input } = openToggle;
+      openToggle = null;
+      if (label.isConnected && input.checked) {
+        label.click();
+        nav.focus(label);
+        return;
+      }
     }
     if (openDialog(doc)) {
       // The site closes its own pop-ups on Escape.
@@ -393,6 +403,10 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
           break;
         }
         overlay.feedback('press');
+        // A label that opens a list by ticking a hidden checkbox: remember it, so Back can close the list.
+        if (target instanceof HTMLLabelElement && target.control instanceof HTMLInputElement && target.control.type === 'checkbox') {
+          openToggle = target.control.checked ? { label: target, input: target.control } : null;
+        }
         if (target && !inPlayer()) {
           hoverIfStillCollapsed(target);
           // Some controls scroll the page to another section (tabs that are

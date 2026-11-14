@@ -293,6 +293,23 @@ describe('styled radios and checkboxes', () => {
     expect(ids(nav.candidates())).toEqual(['optA', 'optB', 'visibleBox']);
   });
 
+  // Shape seen on the live site's season selector.
+  it('focuses a label tied by "for" to a toggle parked off screen, and not labels for other things', () => {
+    document.body.innerHTML = `
+      <input type="checkbox" id="parked" data-rect="-99955,100,13,13">
+      <label for="parked" id="seasons" aria-hidden="true" data-rect="44,100,141,48">x</label>
+      <input type="checkbox" id="real" data-rect="300,100,20,20">
+      <label for="real" id="besideReal" data-rect="330,100,100,20">x</label>
+      <input type="search" id="q" data-rect="500,100,200,30">
+      <label for="q" id="forText" data-rect="500,60,100,20">x</label>
+      <label for="missing" id="dangling" data-rect="700,100,100,20">x</label>`;
+    const nav = new SpatialNavigator(document);
+    expect(ids(nav.candidates())).toEqual(['q', 'real', 'seasons']);
+    nav.focus(document.getElementById('seasons'));
+    nav.activate();
+    expect((document.getElementById('parked') as HTMLInputElement).checked).toBe(true);
+  });
+
   it('selects the option when its label is activated', () => {
     const nav = new SpatialNavigator(document);
     nav.focus(document.getElementById('optB'));

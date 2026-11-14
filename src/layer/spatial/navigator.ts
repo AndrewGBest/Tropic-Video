@@ -19,7 +19,16 @@ const FOCUSABLE = [
   // it wins, because wrappers of another candidate are dropped.)
   'label:has(input[type="radio"])',
   'label:has(input[type="checkbox"])',
+  // The same, with the input elsewhere and tied by `for` (checked below).
+  'label[for]',
 ].join(',');
+
+/** For a `label[for]`: the checkbox or radio it stands for, or null when it labels something else. */
+function labelledToggle(label: Element): HTMLInputElement | null {
+  const id = label.getAttribute('for');
+  const target = id ? label.ownerDocument.getElementById(id) : null;
+  return target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio') ? target : null;
+}
 
 export const FOCUS_ATTR = 'data-tropic-focus';
 /** Set on a focused element small enough to grow, as focused cards do on a TV. */
@@ -165,6 +174,12 @@ export function isPinned(el: Element, view: Window, cache: Map<Element, boolean>
   return pinned;
 }
 
+/** False for something parked far outside the page, a common way to hide a real input. */
+function onScreenish(el: Element, view: Window): boolean {
+  const r = el.getBoundingClientRect();
+  return r.right > -2000 && r.left < view.innerWidth + 2000;
+}
+
 /** True when `outer` wholly contains `inner` and is at least four times its area. */
 function covers(outer: Rect, inner: Rect): boolean {
   if (inner.left < outer.left || inner.right > outer.right || inner.top < outer.top || inner.bottom > outer.bottom) return false;
@@ -205,6 +220,27 @@ export class SpatialNavigator {
       if (skip && el.matches(skip)) continue;
       if (!isVisible(el, view)) continue;
       seen.add(el);
+    }
+    // A label tied to a toggle by `for` stands in for it only when the toggle
+    // itself cannot be focused.
+    for (const el of [...seen]) {
+      if (!(el instanceof HTMLLabelElement) || !el.hasAttribute('for') || el.querySelector('input')) continue;
+      const toggle = labelledToggle(el);
+      if (!toggle || (seen.has(toggle) && onScreenish(toggle, view))) seen.delete(el);
+    }
+    // Nothing parked far outside the page is a target. When it is a toggle,
+    // its label is what the user sees and is used instead, even if the label
+    // is hidden from assistive technology. Seen on the live site: a season
+    // list opened by a label whose checkbox sits 100,000 pixels to the left.
+    for (const el of [...seen]) {
+      if (onScreenish(el, view)) continue;
+      seen.delete(el);
+      if (!(el instanceof HTMLInputElement) || (el.type !== 'checkbox' && el.type !== 'radio')) continue;
+      for (const label of el.labels ?? []) {
+        const r = label.getBoundingClientRect();
+        const style = view.getComputedStyle(label);
+        if (r.width >= 4 && r.height >= 4 && style.visibility !== 'hidden' && style.display !== 'none' && style.opacity !== '0') seen.add(label);
+      }
     }
     // Drop wrappers that contain another candidate, so a card and the link
     // inside it do not both receive focus.

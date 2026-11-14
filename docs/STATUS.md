@@ -72,6 +72,9 @@ Update this at the end of every working session.
   must be strips; up/down prefer page content over pinned bars. Adapter
   revision 3 guards the Store banner's checkout button.
 
+- Lists opened by a label tied to a hidden checkbox (the season selector) are
+  focusable, and Back closes them. Controls parked far off screen are never
+  focus targets.
 - Pop-ups (modal dialogs): focus moves in, stays in, Back closes with the
   site's Escape handling and focus returns to what opened it. Focus follows
   when a control scrolls the page to another section.
@@ -118,11 +121,11 @@ Update this at the end of every working session.
 | Title page tabs: left/right along the strip; Enter on Details scrolls there and focus follows | live site, focus and scroll position read |
 | My Stuff and a movie's title page have no traps | live site, Down and Right walks |
 | Live TV programme pop-up from the remote | live site: Enter opened it with focus on its close button, Back closed it, focus returned to the programme |
+| Season selector from the remote | live site, a multi-season title: Down reached the selector, Enter showed seven season links, Down moved onto one, Back closed the list and focus returned to the selector. No season was switched |
 
 ### Still not verified after session 2
 
-- Remote coverage still to walk: the season selector (the titles tried had
-  one season), Live TV playback (the stations tried opened an information
+- Remote coverage still to walk: Live TV playback (the stations tried opened an information
   pop-up instead of playing), the rent or buy drawer on a movie page (not
   opened under automation), and a collection page.
 
