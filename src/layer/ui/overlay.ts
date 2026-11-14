@@ -13,8 +13,8 @@ const CSS = `
 }
 .toast {
   position: fixed; left: 50%; bottom: 8vh; transform: translateX(-50%);
-  background: rgba(16,16,16,.94); color: #fff; font: 600 2.2vh/1.3 system-ui, sans-serif;
-  padding: 1.4vh 2.4vh; border-radius: 1vh; max-width: 70vw; opacity: 0; transition: opacity .2s;
+  background: rgba(16,16,16,.94); color: #fff; font: 600 3.4vh/1.3 system-ui, sans-serif;
+  padding: 2vh 3.4vh; border-radius: 1.4vh; max-width: 80vw; text-align: center; opacity: 0; transition: opacity .2s;
 }
 .toast.show { opacity: 1; }
 `;

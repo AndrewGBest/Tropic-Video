@@ -203,3 +203,23 @@ rule 4), and it needs no selectors.
 **Not verified:** the automatic value on a real 1080p or 4K screen.
 **Reopen if:** the site switches to a phone layout at the zoomed width, or
 Andrew prefers a different density on a real TV; change the target height.
+
+## 2026-11-14: TV scale target is a 540-high viewport; the TV look stays original
+
+**Decision:** the zoom target moves from 720 to 540 CSS pixels of height
+(2x at 1080p, 4x at 4K), and the layer's toast and the notice page use
+larger type. Supersedes the 720 target in the entry above.
+**Reason:** Andrew asked for a big UI readable from the couch. 960x540 is the
+conventional canvas for TV layouts (from memory of Android TV's design
+guidance, which treats 1080p as 960x540dp; not re-checked against the
+source). Checked on the live site at that viewport: home, a title page and
+the player keep their layout, four cards to a row, with larger text, buttons
+and player controls.
+**Declined:** Andrew also asked to pull images from the service's official
+TV app and use them as the basis for the UI. Not done: Hard rule 1 keeps
+third-party artwork and screenshots out of the repo and Hard rule 6 forbids
+imitating the look of the service's TV app. The content on screen is the
+service's own website, shown as it serves it; everything the layer adds is
+original.
+**Reopen if:** on a real TV the 540 target is too large or too small; change
+`TARGET_VIEWPORT_HEIGHT`, or use `--zoom=`.

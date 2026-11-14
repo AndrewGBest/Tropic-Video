@@ -29,8 +29,9 @@ Update this at the end of every working session.
   returns to the picture, then closes the player with the site's own Escape
   handling (history is only the fallback).
 
-- TV scaling: page zoom chosen so the site sees a 720-high viewport
-  (`src/main/zoom.ts`); `--zoom=<factor>` overrides, `--zoom=1` turns it off.
+- TV scaling: page zoom chosen so the site sees a 540-high viewport, 2x at
+  1080p (`src/main/zoom.ts`); `--zoom=<factor>` overrides, `--zoom=1` turns it
+  off. The layer's toast and the notice page use couch-sized type.
 - Row memory: entering a sideways-scrolling row goes to where you last were in
   it, or to its first card on screen.
 
@@ -58,6 +59,7 @@ Update this at the end of every working session.
 | Back closes the player and returns to the title page | later run: Escape handled by the site's player; path stayed on the title page |
 | Up/down in the player reveal the site's controls and focus them; arrows walk both control rows; Enter activates (tested on mute) | later run, focus position read after each key, four reveals out of four |
 | Row memory on the live home page | run at `--zoom=1.25`: fresh row entered at its first card, earlier rows re-entered at the remembered card |
+| The live site keeps its layout at the 960x540 TV canvas | run at `--zoom=1.3333` in the 1280x720 window: home, a title page and the player looked at in screenshots; controls focused; Back worked |
 | Zoom applies and the ring, player controls and Back still line up | same run: viewport 1024x576, screenshot looked at, player controls focused, Back stayed on the title page |
 | The AppImage builds and runs | `npm run dist`, then launched with a throwaway profile under `--spike --automation`: Widevine component fetched at run time, notice page shown; the unpacked build contains no CDM |
 | CI runs on GitHub | `gh run list`: check and e2e green on each push to `main` |

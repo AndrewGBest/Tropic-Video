@@ -53,11 +53,11 @@ export function noticePageUrl(reason: BlockReason, url: string): string {
 <meta charset="utf-8">
 <title>Tropic Video: page blocked</title>
 <style>
-  html, body { height: 100%; margin: 0; background: #000; color: #eee; font: 2.6vh/1.5 system-ui, sans-serif; }
-  main { box-sizing: border-box; height: 100%; max-width: 70vw; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 2vh; }
-  h1 { font-size: 4.4vh; margin: 0; }
+  html, body { height: 100%; margin: 0; background: #000; color: #eee; font: 3.6vh/1.5 system-ui, sans-serif; }
+  main { box-sizing: border-box; height: 100%; max-width: 80vw; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 2vh; }
+  h1 { font-size: 6vh; margin: 0; }
   p { margin: 0; }
-  code { font: 2.3vh ui-monospace, monospace; color: #9fd8c0; overflow-wrap: anywhere; }
+  code { font: 3.2vh ui-monospace, monospace; color: #9fd8c0; overflow-wrap: anywhere; }
   .hint { color: #aaa; }
 </style>
 </head>
