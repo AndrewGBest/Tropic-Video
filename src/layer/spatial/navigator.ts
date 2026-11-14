@@ -129,6 +129,19 @@ export function rowOf(el: Element, view: Window): Element | null {
 }
 
 /**
+ * The pop-up the page has put in front of everything, if any: the last
+ * laid-out modal dialog. While one is open, only its controls can be reached.
+ */
+export function openDialog(doc: Document): Element | null {
+  let found: Element | null = null;
+  for (const el of doc.querySelectorAll('[role="dialog"][aria-modal="true"], dialog[open]')) {
+    const r = el.getBoundingClientRect();
+    if (r.width >= 4 && r.height >= 4) found = el;
+  }
+  return found;
+}
+
+/**
  * True for controls in a bar that stays put while the page scrolls (a fixed
  * or sticky header, a pinned tab strip). `cache` avoids restyling shared ancestors.
  */
@@ -240,6 +253,29 @@ export class SpatialNavigator {
       }
     }
     return this.focus(best);
+  }
+
+  /** True when the focused control is entirely outside the window (the page was scrolled away from it). */
+  focusIsOffScreen(): boolean {
+    const el = this.focused;
+    const view = this.doc.defaultView;
+    if (!el || !view) return false;
+    const r = el.getBoundingClientRect();
+    return r.bottom <= 0 || r.top >= view.innerHeight || r.right <= 0 || r.left >= view.innerWidth;
+  }
+
+  /** Focuses the first page control wholly on screen, reading order; pinned bars only if there is nothing else. */
+  focusFirstOnScreen(): boolean {
+    const view = this.doc.defaultView;
+    if (!view) return false;
+    const onScreen = this.candidates().filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= view.innerHeight && r.left >= 0 && r.right <= view.innerWidth;
+    });
+    const cache = new Map<Element, boolean>();
+    const flowing = onScreen.filter((el) => !isPinned(el, view, cache));
+    const pool = flowing.length ? flowing : onScreen;
+    return this.focus(pool[pickInitial(pool.map(toRect))] ?? null);
   }
 
   /** Focuses the first candidate inside `container`, reading order. */

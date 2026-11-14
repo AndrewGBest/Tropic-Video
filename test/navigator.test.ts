@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { edgeControl, FOCUS_ATTR, SpatialNavigator, ZOOM_ATTR } from '../src/layer/spatial/navigator';
+import { edgeControl, FOCUS_ATTR, openDialog, SpatialNavigator, ZOOM_ATTR } from '../src/layer/spatial/navigator';
 
 // jsdom has no layout engine, so each element's rectangle is read from data-rect="left,top,width,height".
 function installLayout(): void {
@@ -358,5 +358,40 @@ describe('pinned bars', () => {
     nav.focus(document.getElementById('tab'));
     nav.move('down');
     expect(nav.focused?.id).toBe('here');
+  });
+});
+
+describe('following a jump', () => {
+  it('knows when focus is off screen and can pick the first page control on screen', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 960, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 540, configurable: true });
+    document.body.innerHTML = `
+      <div style="position: sticky">${card('pinnedTab', 40, 0)}</div>
+      ${card('leftBehind', 40, -1600)}
+      ${card('cutOff', 40, 500)}
+      ${card('second', 300, 200)}
+      ${card('first', 40, 200)}`;
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('leftBehind'));
+    expect(nav.focusIsOffScreen()).toBe(true);
+    nav.focusFirstOnScreen();
+    expect(nav.focused?.id).toBe('first');
+    expect(nav.focusIsOffScreen()).toBe(false);
+  });
+});
+
+describe('pop-ups', () => {
+  it('finds an open modal dialog and ignores closed or non-modal ones', () => {
+    document.body.innerHTML = `
+      ${card('behind', 0, 0)}
+      <div role="dialog" aria-modal="true" id="closed" data-rect="0,0,0,0"></div>
+      <div role="dialog" id="notModal" data-rect="10,10,300,300"></div>
+      <div role="dialog" aria-modal="true" id="open" data-rect="250,40,460,500">${card('close', 600, 60)}${card('action', 300, 400)}</div>`;
+    expect(openDialog(document)?.id).toBe('open');
+    const nav = new SpatialNavigator(document, { scope: () => openDialog(document) });
+    expect(ids(nav.candidates())).toEqual(['action', 'close']);
+    document.getElementById('open')!.remove();
+    expect(openDialog(document)).toBeNull();
+    expect(ids(nav.candidates())).toEqual(['behind']);
   });
 });

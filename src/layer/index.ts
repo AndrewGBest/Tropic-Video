@@ -10,7 +10,7 @@ import { keyToAction, type Mode } from './input/keys';
 import { isSecretField, OSK_ROWS, OskModel } from '../shared/osk';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
 import { findMainVideo, isPlayerActive, playerScope } from './player';
-import { edgeControl, isVisible, SpatialNavigator } from './spatial/navigator';
+import { edgeControl, isVisible, openDialog, SpatialNavigator } from './spatial/navigator';
 import { HOST_TAG, Overlay } from './ui/overlay';
 import { installSpikeProbes } from './spike';
 
@@ -49,6 +49,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const scope = (): Element | null => {
     // An open hover menu lies over the page; what is underneath is not reachable until it is closed.
     if (hoverHost?.isConnected) return hoverHost;
+    // A pop-up the page opened in front of everything: only it can be reached.
+    const dialog = openDialog(doc);
+    if (dialog) return dialog;
     if (!inPlayer()) return null;
     const v = findMainVideo(doc, playerRoots);
     return v ? playerScope(v, playerRoots) : null;
@@ -188,12 +191,38 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   // Player control is a real key press made by the shell, so the site's own
   // player decides what it does (it may refuse a seek during an advertisement).
   const injected = new InjectedKeys();
-  const pressPlayerKey = (key: PlayerKey): void => {
-    if (!inPlayer()) return;
+  const pressKey = (key: PlayerKey): void => {
     const info = playerKeyInfo(key);
     if (!info) return;
     injected.expect(info.domKey, Date.now());
     send({ kind: 'playerKey', key });
+  };
+  const pressPlayerKey = (key: PlayerKey): void => {
+    if (inPlayer()) pressKey(key);
+  };
+
+  /** Moves focus into a pop-up that has opened, if it is not there already. */
+  let beforeDialog: Element | null = null;
+  let dialogTimer: number | undefined;
+  const enterDialog = (): boolean => {
+    const dialog = openDialog(doc);
+    if (!dialog) return false;
+    const f = nav.focused;
+    if (!f || !dialog.contains(f)) {
+      beforeDialog = f;
+      nav.focusFirstIn(dialog);
+    }
+    return true;
+  };
+  /** After asking a pop-up to close: once it has gone, focus returns to what opened it. */
+  const leaveDialog = (): void => {
+    view.clearTimeout(dialogTimer);
+    dialogTimer = view.setTimeout(() => {
+      if (openDialog(doc)) return;
+      const back = beforeDialog;
+      beforeDialog = null;
+      if (back?.isConnected && isVisible(back, view)) nav.focus(back);
+    }, 600);
   };
 
   // Up or down in the player: show the site's controls (they appear when the
@@ -230,12 +259,19 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
 
   let refocusTimer: number | undefined;
+  let followTimer: number | undefined;
   let lastCloseAt = 0;
   let backStreak = 0;
   const back = (): void => {
     const active = doc.activeElement;
     if (isTextEntry(active)) {
       (active as HTMLElement).blur();
+      return;
+    }
+    if (openDialog(doc)) {
+      // The site closes its own pop-ups on Escape.
+      pressKey('close');
+      leaveDialog();
       return;
     }
     if (hoverHost) {
@@ -310,6 +346,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     // A pending "pick focus up again" belongs to the previous key; a new key
     // overrides it (Back right after Enter must not have focus put back).
     view.clearTimeout(refocusTimer);
+    view.clearTimeout(followTimer);
     if (oskOpen) {
       if (a.type === 'move') {
         // Up from the top row leaves the keyboard for the page.
@@ -348,7 +385,16 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
           nav.move('down');
           break;
         }
-        if (target && !inPlayer()) hoverIfStillCollapsed(target);
+        if (target && !inPlayer()) {
+          hoverIfStillCollapsed(target);
+          // Some controls scroll the page to another section (tabs that are
+          // really jump links). Focus follows to what is now on screen.
+          view.clearTimeout(followTimer);
+          followTimer = view.setTimeout(() => {
+            if (enterDialog()) return;
+            if (!inPlayer() && nav.focused === target && nav.focusIsOffScreen()) nav.focusFirstOnScreen();
+          }, 900);
+        }
         // Activating a player control can replace it (a menu opens, a list
         // changes). Pick focus up again next to where it was.
         if (box && inPlayer()) {
@@ -425,6 +471,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     // (onPlayerControl drops focus that is outside the player. Focus on a
     // control is kept: pausing and resuming from the control bar must not lose it.)
     if (playing && !onPlayerControl()) overlay.track(null);
+    // A pop-up that opened on its own takes focus too.
+    if (!playing) enterDialog();
     if (playing !== lastPlaying) {
       lastPlaying = playing;
       send({ kind: 'playback', playing });
@@ -450,6 +498,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       view.clearInterval(controlsTimer);
       view.clearInterval(keepAlive);
       view.clearTimeout(refocusTimer);
+      view.clearTimeout(dialogTimer);
       view.clearTimeout(hoverTimer);
       view.clearTimeout(edgeTimer);
       stopPads();

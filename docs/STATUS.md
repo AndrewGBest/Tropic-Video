@@ -72,6 +72,10 @@ Update this at the end of every working session.
   must be strips; up/down prefer page content over pinned bars. Adapter
   revision 3 guards the Store banner's checkout button.
 
+- Pop-ups (modal dialogs): focus moves in, stays in, Back closes with the
+  site's Escape handling and focus returns to what opened it. Focus follows
+  when a control scrolls the page to another section.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -107,12 +111,16 @@ Update this at the end of every working session.
 | Navigation bar dropdowns from the remote | live site: Enter on a link that carries a menu opened the menu instead of following the link; down and up walked its entries; left closed it and moved to the next item; Enter on an entry loaded its page. Back returned focus to the profile button |
 | Title page walks down and back up through every section, episodes included | live site, focus recorded after each key: banner buttons, tabs, each episode, related rows, details links, footer, and the same path back up |
 | Home, Movies, Live TV and Store pages have no traps for up/down | live site, nine to sixteen Down presses each; focus always moved and was on screen |
+| Title page tabs: left/right along the strip; Enter on Details scrolls there and focus follows | live site, focus and scroll position read |
+| My Stuff and a movie's title page have no traps | live site, Down and Right walks |
+| Live TV programme pop-up from the remote | live site: Enter opened it with focus on its close button, Back closed it, focus returned to the programme |
 
 ### Still not verified after session 2
 
-- Remote coverage still to walk: search results in depth, My Stuff, a
-  collection page, a movie's title page, the season selector, Live TV
-  playback, the Related and Details tabs, and every page's left/right edges.
+- Remote coverage still to walk: the season selector (the titles tried had
+  one season), Live TV playback (the stations tried opened an information
+  pop-up instead of playing), the rent or buy drawer on a movie page (not
+  opened under automation), and a collection page.
 
 - Sign-in pages with a remote. An agent-driven run must use `--automation`,
   which blocks the signed-out landing page, so only Andrew can try these.
