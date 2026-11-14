@@ -233,3 +233,19 @@ the site a viewport 865 wide and it collapsed its navigation bar into a
 The exact width where the site switches was not measured; it is somewhere
 between 865 and 962.
 **Reopen if:** the site moves that breakpoint above 960.
+
+## 2026-11-14: Adapter revision 2: carousel arrows are pressed at the edge, not focused
+
+**Decision:** new adapter keys `rowPrev` and `rowNext` name a strip's arrow
+buttons (evidence: `test/fixtures/outlines/home-carousels.txt`). They are
+never focus targets. When left or right has nowhere to go, the layer clicks
+the arrow of the strip the focus is in, then moves focus to the first control
+shown if the old one disappeared. Two generic rules were added with it: a
+control inside a fully transparent ancestor is not a focus target, and
+neither is a link that wholly covers other controls and is at least four
+times their size.
+**Reason:** on the live site the top carousel stacks its slides in one place
+(hidden ones in a transparent wrapper) under a banner-sized link, so focus
+bounced between invisible duplicates and the backdrop and never changed slide.
+**Reopen if:** the backdrop rule hides something a user needs to reach; it
+has only been watched on the home, title and player pages.

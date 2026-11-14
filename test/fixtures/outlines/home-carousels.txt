@@ -1,0 +1,30 @@
+# Trimmed from an outline of the live site's home page, captured 2026-11-13 (signed in):
+# the top carousel and one card row, each with its own previous and next arrows.
+# Slides, cards and icons were cut; every remaining line is as captured.
+# Structure only; checked by eye for names and titles.
+div._2RwnU5.dynamic-type-ramp.BNRv2x.WAIdKJ
+  div.u_QEKa[data-testid="top-hero"]
+    div
+      div.pHslAE.KZdtCS[data-testid="top-hero-wrapper"]
+        div.hNuWcy.oZkW1c.DrsRup
+          button[aria-label:28][data-testid="left-arrow"]
+          ul._2Go0y[data-testid="fading-rotating-carousel"]
+            li.acHA45.BF7GqV[aria-label:14]
+              article.SJmNHq.ae7h_p.NBTKAH[data-testid="top-hero-card"]
+            li.acHA45.BF7GqV[aria-label:14]
+              article.SJmNHq.ae7h_p.NBTKAH.hzBSzB[data-testid="top-hero-card"]
+          button[aria-label:30][data-testid="right-arrow"]
+  div.POiopc[data-testid="standard-carousel"]
+    section.QHjixV
+      span.TvxgS1
+        h2.qwttco
+          span[data-testid="carousel-title"]
+            span{text:14}
+    div.UI3iHJ[data-testid=":id"]
+      div
+        section
+          div.vJYTdI.LiEb2X.UEOrk2.CHGlLt.OH_E2I
+            button.Zaab8D.kSwXPp.vEZoyH.iS7JPD[tabindex="-1"][aria-label:17][data-testid="left-arrow"]
+            ul.lw1NJZ[data-testid="card-container-list"]
+              li.NQEYQF.egDugf
+            button.Zaab8D.kSwXPp.vEZoyH.u5kdG4[tabindex="-1"][aria-label:13][data-testid="right-arrow"]

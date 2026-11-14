@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FOCUS_ATTR, SpatialNavigator } from '../src/layer/spatial/navigator';
+import { edgeControl, FOCUS_ATTR, SpatialNavigator } from '../src/layer/spatial/navigator';
 
 // jsdom has no layout engine, so each element's rectangle is read from data-rect="left,top,width,height".
 function installLayout(): void {
@@ -144,5 +144,66 @@ describe('row memory', () => {
     nav.focus(document.getElementById('a1'));
     nav.move('right');
     expect(nav.focused?.id).toBe('a2');
+  });
+});
+
+describe('carousels', () => {
+  // Shape seen on the live site: slides stacked in one place, all but one inside a transparent wrapper, with arrows beside the list.
+  beforeEach(() => {
+    Object.defineProperty(window, 'innerHeight', { value: 540, configurable: true });
+    document.body.innerHTML = `
+      <nav data-rect="0,0,960,40">${card('home', 0, 0)}</nav>
+      <div id="hero" data-rect="0,40,960,360">
+        <button id="prev" class="arrow prev" data-rect="0,200,30,30">p</button>
+        <ul>
+          <li style="opacity: 0"><div>${card('s1', 60, 300)}</div></li>
+          <li><div>${card('s2', 60, 300)}${card('s2more', 200, 300)}</div></li>
+        </ul>
+        <button id="next" class="arrow next" data-rect="925,200,30,30">n</button>
+      </div>
+      <main id="page" data-rect="0,0,960,3000"><div id="plain">${card('lonely', 0, 500)}</div></main>`;
+  });
+
+  it('ignores controls inside a transparent ancestor', () => {
+    const nav = new SpatialNavigator(document);
+    expect(ids(nav.candidates())).not.toContain('s1');
+    expect(ids(nav.candidates())).toContain('s2');
+  });
+
+  it('ignores a backdrop link stretched behind other controls', () => {
+    document.getElementById('hero')!.insertAdjacentHTML('beforeend', '<a href="#" id="backdrop" data-rect="0,40,960,360">x</a>');
+    const nav = new SpatialNavigator(document);
+    expect(ids(nav.candidates())).not.toContain('backdrop');
+    expect(ids(nav.candidates())).toContain('s2');
+  });
+
+  it('never focuses the arrows when the adapter names them', () => {
+    const nav = new SpatialNavigator(document, { skip: ['.arrow', ':::bad'] });
+    expect(ids(nav.candidates())).toEqual(['home', 'lonely', 's2', 's2more']);
+  });
+
+  it('finds the arrow of the strip the focus is in', () => {
+    const hit = edgeControl(document.getElementById('s2more')!, ['.next'], window);
+    expect(hit?.control.id).toBe('next');
+    expect(hit?.container.id).toBe('hero');
+    expect(edgeControl(document.getElementById('s2')!, ['.prev'], window)?.control.id).toBe('prev');
+  });
+
+  // Seen on the live site: the arrows sit in a transparent wrapper until hovered, and a tall list lies between the slide and them.
+  it('uses an arrow that is laid out but transparent, past a tall ancestor without arrows', () => {
+    document.getElementById('next')!.outerHTML = '<span style="opacity: 0"><button id="next" class="arrow next" data-rect="925,200,30,30">n</button></span>';
+    document.querySelector('#hero ul')!.setAttribute('data-rect', '0,40,960,1083');
+    expect(edgeControl(document.getElementById('s2more')!, ['.next'], window)?.control.id).toBe('next');
+  });
+
+  it('does not reach into another strip through a page-sized ancestor', () => {
+    document.getElementById('page')!.append(document.getElementById('hero')!);
+    expect(edgeControl(document.getElementById('lonely')!, ['.next'], window)).toBeNull();
+  });
+
+  it('can focus the first control of the slide now showing', () => {
+    const nav = new SpatialNavigator(document, { skip: ['.arrow'] });
+    nav.focusFirstIn(document.getElementById('hero')!);
+    expect(nav.focused?.id).toBe('s2');
   });
 });

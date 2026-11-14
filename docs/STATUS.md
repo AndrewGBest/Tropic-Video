@@ -38,6 +38,11 @@ Update this at the end of every working session.
 - Packaging: an original icon (`assets/icon.svg`, rendered to `icon.png`) and
   a desktop name, so the AppImage no longer carries Electron's default icon.
 
+- Carousels: left or right past the last control presses the strip's own
+  arrow (adapter revision 2), and focus follows to the new slide. Focus now
+  ignores controls inside a transparent ancestor and backdrop links stretched
+  behind other controls.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |
@@ -63,6 +68,7 @@ Update this at the end of every working session.
 | Zoom applies and the ring, player controls and Back still line up | same run: viewport 1024x576, screenshot looked at, player controls focused, Back stayed on the title page |
 | The AppImage builds and runs | `npm run dist`, then launched with a throwaway profile under `--spike --automation`: Widevine component fetched at run time, notice page shown; the unpacked build contains no CDM |
 | CI runs on GitHub | `gh run list`: check and e2e green on each push to `main` |
+| Left/right change slide in the home page's top carousel | run on the live site: right from the last button showed the next slide with focus on its play button (screenshot looked at) |
 
 ### Still not verified after session 2
 
@@ -84,8 +90,8 @@ Update this at the end of every working session.
   is then dropped; the next up/down starts again from the middle.
 - Up from the player's bottom row lands on the volume slider, not the button.
   The seek bar itself is not reachable (left/right seek instead).
-- The home page's top carousel: left/right do not change slide (all slides
-  share one position); down leaves it normally.
+- After a slide change the page scrolls so the slide's title sits partly under
+  the navigation bar.
 - Menus opened from player controls (subtitles, audio) have not been walked.
 - `sendInputEvent` needs the window to have focus. Fine on a TV; a desktop
   window in the background would ignore gamepad play/pause.
@@ -99,7 +105,7 @@ Update this at the end of every working session.
 ### Next actions (replaces the list at the bottom)
 
 1. Walk the player's subtitle and audio menus; next-episode and skip prompts.
-2. The home page's top carousel; profile picker and sign-in pages with a remote.
+2. Profile picker and sign-in pages with a remote.
 3. First release: Andrew signs in to the packaged build and tags a version.
 
 ## As of 2026-11-13 (session 1, cloud workspace, no access to the live site)

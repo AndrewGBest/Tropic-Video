@@ -24,6 +24,8 @@ export interface NavigatorOptions {
   /** Elements the layer itself owns; never candidates. */
   ignoreWithin?: string;
   onFocusChange?: (el: Element | null) => void;
+  /** Controls that are never focus targets (carousel arrows the layer presses itself at a row's edge). */
+  skip?: string[];
   /** When it returns an element, only candidates inside that element are considered. */
   scope?: () => Element | null;
 }
@@ -34,6 +36,13 @@ export function isVisible(el: Element, view: Window): boolean {
   const style = view.getComputedStyle(el);
   if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') return false;
   if (el.closest('[aria-hidden="true"], [inert]')) return false;
+  // Opacity is not inherited in the computed style, but a transparent ancestor
+  // hides everything in it. Seen on the live site: the slides of a carousel
+  // are stacked in one place and all but one sit in a fully transparent wrapper.
+  let node = el.parentElement;
+  for (let i = 0; node && i < 12; i++, node = node.parentElement) {
+    if (view.getComputedStyle(node).opacity === '0') return false;
+  }
   return true;
 }
 
@@ -42,12 +51,45 @@ export function isVisible(el: Element, view: Window): boolean {
  * ancestor that is wider inside than outside and clips or scrolls. Plain
  * grids have none and keep purely geometric movement.
  */
+/**
+ * The carousel arrow to press when sideways movement runs out: a match for
+ * `selectors` in the nearest ancestor of `from` that has one. That ancestor
+ * must be no taller than the viewport, so a press in one strip never turns
+ * another strip. The arrow only needs to be laid out: on the live site the
+ * arrows are transparent until the pointer hovers, and still work.
+ */
+export function edgeControl(from: Element, selectors: readonly string[], view: Window): { control: Element; container: Element } | null {
+  const maxHeight = view.innerHeight * 1.2;
+  let node = from.parentElement;
+  for (let i = 0; node && i < 14; i++, node = node.parentElement) {
+    for (const sel of selectors) {
+      try {
+        for (const control of node.querySelectorAll(sel)) {
+          const r = control.getBoundingClientRect();
+          if (r.width < 4 || r.height < 4 || (control as HTMLButtonElement).disabled) continue;
+          return node.getBoundingClientRect().height > maxHeight ? null : { control, container: node };
+        }
+      } catch {
+        // A bad selector must never break navigation.
+      }
+    }
+  }
+  return null;
+}
+
 export function rowOf(el: Element, view: Window): Element | null {
   let node = el.parentElement;
   for (let i = 0; node && i < 8; i++, node = node.parentElement) {
     if (node.scrollWidth > node.clientWidth + 8 && view.getComputedStyle(node).overflowX !== 'visible') return node;
   }
   return null;
+}
+
+/** True when `outer` wholly contains `inner` and is at least four times its area. */
+function covers(outer: Rect, inner: Rect): boolean {
+  if (inner.left < outer.left || inner.right > outer.right || inner.top < outer.top || inner.bottom > outer.bottom) return false;
+  const area = (r: Rect): number => (r.right - r.left) * (r.bottom - r.top);
+  return area(outer) >= 4 * area(inner);
 }
 
 function toRect(el: Element): Rect {
@@ -75,15 +117,40 @@ export class SpatialNavigator {
     if (!view) return [];
     const selector = [FOCUSABLE, ...(this.opts.extraFocusable ?? [])].join(',');
     const scope = this.opts.scope?.() ?? null;
+    const skip = this.skipSelector();
     const seen = new Set<Element>();
     for (const el of (scope ?? this.doc).querySelectorAll(selector)) {
       if (this.opts.ignoreWithin && el.closest(this.opts.ignoreWithin)) continue;
+      if (skip && el.matches(skip)) continue;
       if (!isVisible(el, view)) continue;
       seen.add(el);
     }
     // Drop wrappers that contain another candidate, so a card and the link
     // inside it do not both receive focus.
-    return [...seen].filter((el) => ![...seen].some((other) => other !== el && el.contains(other)));
+    const inner = [...seen].filter((el) => ![...seen].some((other) => other !== el && el.contains(other)));
+    // Drop backdrops too: a link stretched over a whole banner, with the
+    // banner's real buttons lying on top of it. Seen on the live site, where
+    // such a link swallowed sideways movement.
+    const rects = inner.map(toRect);
+    return inner.filter((_, i) => !rects.some((other, j) => j !== i && covers(rects[i]!, other)));
+  }
+
+  private skipSelector(): string | null {
+    const valid = (this.opts.skip ?? []).filter((sel) => {
+      try {
+        this.doc.querySelector(sel);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    return valid.length ? valid.join(',') : null;
+  }
+
+  /** Focuses the first candidate inside `container`, reading order. */
+  focusFirstIn(container: Element): boolean {
+    const inside = this.candidates().filter((el) => container.contains(el));
+    return this.focus(inside[pickInitial(inside.map(toRect))] ?? null);
   }
 
   move(dir: Direction): boolean {

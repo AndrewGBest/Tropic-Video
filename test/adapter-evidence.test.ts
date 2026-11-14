@@ -38,7 +38,7 @@ function fromOutline(name: string): HTMLElement {
   return root;
 }
 
-describe('adapter revision 1 is backed by outlines', () => {
+describe('the adapter is backed by outlines', () => {
   it('fixtures carry structure only', () => {
     for (const name of readdirSync(DIR)) {
       const body = readFileSync(join(DIR, name), 'utf8')
@@ -59,6 +59,18 @@ describe('adapter revision 1 is backed by outlines', () => {
     const input = dom.querySelector(adapter.selectors.searchInput[0]!);
     expect(input?.getAttribute('type')).toBe('search');
     expect(input?.closest('[data-testid="pv-nav-search-dropdown"]')).not.toBeNull();
+  });
+
+  it('carousel arrows: the top carousel and each card row have one previous and one next button beside their list', () => {
+    const dom = fromOutline('home-carousels.txt');
+    const prev = adapter.selectors.rowPrev[0]!;
+    const next = adapter.selectors.rowNext[0]!;
+    for (const strip of ['[data-testid="top-hero-wrapper"]', '[data-testid="standard-carousel"]']) {
+      const el = dom.querySelector(strip)!;
+      expect(el.querySelectorAll(prev)).toHaveLength(1);
+      expect(el.querySelectorAll(next)).toHaveLength(1);
+      expect(el.querySelector(next)!.parentElement!.querySelector('ul')).not.toBeNull();
+    }
   });
 
   it('player root: holds no video before playback and the player video during it; the trailer is outside', () => {

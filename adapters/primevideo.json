@@ -1,15 +1,29 @@
 {
   "id": "primevideo",
   "schema": 1,
-  "revision": 1,
+  "revision": 2,
   "verified": true,
-  "note": "No selector in this file may be added without a diagnostics outline from the live site that shows it. Evidence for revision 1 is in test/fixtures/outlines/ (captured 2026-11-13) and is checked by test/adapter-evidence.test.ts. playerClose and extraFocusable are empty: the generic heuristics and history-back are in use.",
+  "note": "No selector in this file may be added without a diagnostics outline from the live site that shows it. Evidence is in test/fixtures/outlines/ (captured 2026-11-13) and is checked by test/adapter-evidence.test.ts. playerClose and extraFocusable are empty: the generic heuristics and the site's own Escape handling are in use.",
   "selectors": {
     "extraFocusable": [],
-    "searchInput": ["input#pv-search-nav"],
-    "searchOpen": ["button[aria-expanded]:has(+ [data-testid=\"pv-nav-search-dropdown\"])"],
-    "playerRoot": ["#dv-web-player"],
+    "searchInput": [
+      "input#pv-search-nav"
+    ],
+    "searchOpen": [
+      "button[aria-expanded]:has(+ [data-testid=\"pv-nav-search-dropdown\"])"
+    ],
+    "rowPrev": [
+      "button[data-testid=\"left-arrow\"]"
+    ],
+    "rowNext": [
+      "button[data-testid=\"right-arrow\"]"
+    ],
+    "playerRoot": [
+      "#dv-web-player"
+    ],
     "playerClose": [],
-    "purchaseControls": [".dv-signup-button"]
+    "purchaseControls": [
+      ".dv-signup-button"
+    ]
   }
 }

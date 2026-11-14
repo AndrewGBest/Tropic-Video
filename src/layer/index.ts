@@ -9,7 +9,7 @@ import { startPolling } from './input/gamepad';
 import { keyToAction, type Mode } from './input/keys';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
 import { findMainVideo, isPlayerActive, playerScope } from './player';
-import { isVisible, SpatialNavigator } from './spatial/navigator';
+import { edgeControl, isVisible, SpatialNavigator } from './spatial/navigator';
 import { HOST_TAG, Overlay } from './ui/overlay';
 import { installSpikeProbes } from './spike';
 
@@ -57,7 +57,26 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     ignoreWithin: HOST_TAG,
     onFocusChange: (el) => overlay.track(el),
     scope,
+    skip: [...adapter.selectors.rowPrev, ...adapter.selectors.rowNext],
   });
+
+  // Left or right with nowhere to go: press the strip's own arrow, if the
+  // adapter knows it. A carousel that swaps slides leaves focus on something
+  // no longer shown, so focus then moves to the new slide.
+  let edgeTimer: number | undefined;
+  const moveInPage = (dir: Direction): void => {
+    if (nav.move(dir) || (dir !== 'left' && dir !== 'right')) return;
+    const from = nav.focused;
+    if (!from) return;
+    const hit = edgeControl(from, dir === 'left' ? adapter.selectors.rowPrev : adapter.selectors.rowNext, view);
+    if (!hit) return;
+    (hit.control as HTMLElement).click();
+    view.clearTimeout(edgeTimer);
+    edgeTimer = view.setTimeout(() => {
+      const f = nav.focused;
+      if (!f || !isVisible(f, view)) nav.focusFirstIn(hit.container);
+    }, 700);
+  };
 
   /**
    * True while the user is on one of the player's own controls (reached with
@@ -189,7 +208,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     switch (a.type) {
       case 'move':
         if (inPlayer()) moveInPlayer(a.dir);
-        else nav.move(a.dir);
+        else moveInPage(a.dir);
         break;
       case 'select':
         if (!nav.activate()) nav.move('down');
@@ -278,6 +297,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       view.clearInterval(searchPoll);
       view.clearInterval(controlsTimer);
       view.clearTimeout(closeTimer);
+      view.clearTimeout(edgeTimer);
       stopPads();
       stopGuard();
       stopSpike();
