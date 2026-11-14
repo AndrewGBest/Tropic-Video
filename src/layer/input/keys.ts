@@ -2,6 +2,7 @@
 // and HDMI-CEC is translated to key events by an external helper, so this one
 // table covers all three.
 import type { Action } from '../../shared/actions';
+import { actionFor, type ActionName } from '../../shared/config';
 
 export interface KeyLike {
   key: string;
@@ -15,8 +16,19 @@ export type Mode = 'browse' | 'player' | 'text';
 
 const SEEK_STEP = 10;
 
-export function keyToAction(e: KeyLike, mode: Mode): Action | null {
+/**
+ * `overrides` are the user's own mappings from the config file; they win over
+ * the built-in table. While typing in a text field only non-character keys
+ * can be remapped, so a mapping never eats a letter. An override of "none"
+ * hands the key to the page untouched.
+ */
+export function keyToAction(e: KeyLike, mode: Mode, overrides: Readonly<Record<string, ActionName>> = {}): Action | null {
   if (e.altKey || e.metaKey) return null;
+
+  const spec = e.ctrlKey ? `Ctrl+${e.key.length === 1 ? e.key.toLowerCase() : e.key}` : e.key;
+  if (Object.hasOwn(overrides, spec) && !(mode === 'text' && !e.ctrlKey && e.key.length === 1)) {
+    return actionFor(overrides[spec]!);
+  }
 
   if (e.ctrlKey) {
     switch (e.key.toLowerCase()) {

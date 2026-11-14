@@ -1,3 +1,4 @@
+import type { ActionName } from './config';
 import type { PlayerKey, TextKey } from './player-keys';
 
 // Every input device is reduced to one of these actions before anything else
@@ -42,4 +43,6 @@ export interface LayerOptions {
   spike: boolean;
   /** App version, shown on the About panel. */
   version?: string;
+  /** Key mappings from the user's config file. */
+  keys?: Record<string, ActionName>;
 }

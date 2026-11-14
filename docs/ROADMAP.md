@@ -40,7 +40,8 @@ how in `STATUS.md`.
 
 ## Phase 3: HTPC polish
 
-- [ ] Config file and button remapping, with the smallest settings screen that serves them
+- [x] Config file with key remapping and zoom (edited by hand; no settings screen)
+- [ ] Gamepad button remapping
 - [ ] MPRIS integration and media keys
 - [ ] CEC helper (optional, separate process)
 - [ ] Idle inhibit verified under Wayland, X11 and gamescope

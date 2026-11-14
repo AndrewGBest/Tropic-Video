@@ -311,3 +311,17 @@ updated to match.
 own interface. If there is nothing, do not draw it.
 **Reopen if:** a part of the site turns out unusable from a remote even with
 focus, keys and pointer help.
+
+## 2026-11-14: Settings are a hand-edited config file, not a screen
+
+**Decision:** `config.json` in the user data folder holds key mappings and a
+zoom value. It is read at start, validated (`src/shared/config.ts`), and
+anything wrong is reported in the terminal and ignored. There is no settings
+screen.
+**Reason:** remotes send different keys, so remapping is needed; a screen for
+it would be new own UI with no need a file does not meet (see the test in
+`DESIGN.md` 5.2). Ctrl+Q stays a quit key whatever the file says, so a bad
+mapping cannot trap the user.
+**Not done:** gamepad button remapping; reloading the file without a restart.
+**Reopen if:** users who cannot edit a file need remapping; then a "press the
+key you want" flow, not a general settings screen.

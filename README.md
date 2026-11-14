@@ -84,6 +84,30 @@ npm run dist      # builds release/TropicVideo-x86_64.AppImage and a tarball
 | `--zoom=<factor>` | Override the TV scale. The default fits the site to a 960x540 canvas: 2 on a 1080p screen. `--zoom=1` turns scaling off. |
 | `--automation` | For scripted runs: blocks purchase, rental, subscription and sign-up controls. |
 
+## Remapping keys
+
+Remotes send all sorts of keys. To map one, create `config.json` in the app's
+data folder (`~/.config/Tropic Video/` for the packaged app) and restart:
+
+```json
+{
+  "zoom": 2,
+  "keys": {
+    "MediaStop": "back",
+    "ContextMenu": "about",
+    "F1": "search",
+    "Ctrl+h": "none"
+  }
+}
+```
+
+A key is the name the keyboard or remote sends (a `KeyboardEvent.key` value),
+optionally with `Ctrl+` in front. Actions: `up`, `down`, `left`, `right`,
+`select`, `back`, `playPause`, `seekBack`, `seekForward`, `search`, `about`,
+`quit`, and `none` to switch a built-in key off. `zoom` sets the TV scale.
+Mistakes in the file are reported in the terminal and ignored. Gamepad buttons
+cannot be remapped yet.
+
 ## Your account
 
 Using any unofficial client is at your own risk. The service decides which

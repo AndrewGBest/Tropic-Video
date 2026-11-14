@@ -90,6 +90,10 @@ Update this at the end of every working session.
 - README brought up to date; a "Build packages" workflow builds the AppImage
   and tarball on request and keeps them as an artifact, without a release.
 
+- Config file (`config.json` in the user data folder): key remapping and a
+  zoom setting, validated by `src/shared/config.ts`. Documented in the README.
+  Gamepad buttons are not remappable yet.
+
 ### Verified in session 2, and how
 
 | Claim | Evidence |

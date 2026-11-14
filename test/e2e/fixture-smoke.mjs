@@ -7,7 +7,7 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -303,6 +303,8 @@ try {
   const playerFixture = pathToFileURL(join(root, 'test/fixtures/player.html')).href;
   const port3 = port + 2;
   const userData3 = mkdtempSync(join(tmpdir(), 'tropic-video-e2e-'));
+  // A user config file: one remapped key, one mistake that must be reported and ignored.
+  writeFileSync(join(userData3, 'config.json'), JSON.stringify({ keys: { F2: 'playPause', F3: 'explode' } }));
   let log3 = '';
   const child3 = spawn(
     electronPath,
@@ -325,7 +327,7 @@ try {
     }
     const cdp = await connect(page.webSocketDebuggerUrl);
     const evaluate = async (expression) => (await cdp.send('Runtime.evaluate', { expression, returnByValue: true })).result.value;
-    const VK = { ' ': 32, Enter: 13, ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Escape: 27 };
+    const VK = { ' ': 32, Enter: 13, ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Escape: 27, F2: 113 };
     const press = async (key, wait = 400) => {
       const base = { key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: VK[key], nativeVirtualKeyCode: VK[key] };
       await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...base });
@@ -340,6 +342,9 @@ try {
     check('a physical Space reaches the player once and pauses', await evaluate('[__p.space, document.getElementById("v").paused]'), [1, true]);
     await press('Enter');
     check('Enter becomes one Space key press and resumes', await evaluate('[__p.space, document.getElementById("v").paused]'), [2, false]);
+    await press('F2');
+    await press('F2');
+    check('a key remapped in config.json works, and a bad entry is reported', [await evaluate('__p.space'), /config\.json: key "F3": unknown action/.test(log3)], [4, true]);
     await press('ArrowRight');
     await press('ArrowLeft');
     check('seek keys reach the player once each', await evaluate('[__p.left, __p.right]'), [1, 1]);

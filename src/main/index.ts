@@ -4,6 +4,7 @@ import * as electron from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { BridgeMessage, LayerOptions, SpikeEvent } from '../shared/actions';
+import { parseConfig, type UserConfig } from '../shared/config';
 import { typableText } from '../shared/osk';
 import { playerKeyInfo } from '../shared/player-keys';
 import { browserUserAgent, isAllowedUrl } from './hosts';
@@ -45,6 +46,22 @@ function saveSpikeReport(): void {
   writeFileSync(file, JSON.stringify(spikeReport, null, 2));
 }
 
+/** Reads <user data>/config.json. A missing file is normal; a broken one is reported and ignored. */
+function loadConfig(): UserConfig {
+  const file = join(app.getPath('userData'), 'config.json');
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(file, 'utf8'));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') console.error(`[tropic-video] config.json could not be read: ${String(err).slice(0, 200)}`);
+    return { keys: {} };
+  }
+  const { config, problems } = parseConfig(raw);
+  for (const problem of problems) console.error(`[tropic-video] config.json: ${problem}`);
+  return config;
+}
+let userConfig: UserConfig = { keys: {} };
+
 function loadAdapter(): unknown {
   try {
     return JSON.parse(readFileSync(join(app.getAppPath(), 'adapters', 'primevideo.json'), 'utf8'));
@@ -60,7 +77,9 @@ function startUrl(): string {
 }
 
 function createWindow(): BrowserWindow {
-  const boot = encodeURIComponent(JSON.stringify({ options: { ...options, version: app.getVersion() }, adapter: loadAdapter() }));
+  const boot = encodeURIComponent(
+    JSON.stringify({ options: { ...options, version: app.getVersion(), keys: userConfig.keys }, adapter: loadAdapter() }),
+  );
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
@@ -136,7 +155,7 @@ function createWindow(): BrowserWindow {
   const applyZoom = (): void => {
     if (win.isDestroyed()) return;
     const [width = 0, height = 0] = win.getContentSize();
-    const zoom = tvZoom({ width, height }, value('zoom'));
+    const zoom = tvZoom({ width, height }, value('zoom') ?? (userConfig.zoom === undefined ? undefined : String(userConfig.zoom)));
     if (Math.abs(wc.getZoomFactor() - zoom) > 0.001) wc.setZoomFactor(zoom);
   };
   wc.on('did-navigate', applyZoom);
@@ -279,6 +298,7 @@ async function main(): Promise<void> {
     callback(GRANTED.has(permission));
   });
 
+  userConfig = loadConfig();
   wireMessages();
   const win = createWindow();
   app.on('second-instance', () => {

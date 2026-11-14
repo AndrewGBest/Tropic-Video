@@ -473,7 +473,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       closeOsk();
       return;
     }
-    const action = keyToAction(e, mode());
+    const action = keyToAction(e, mode(), options.keys);
     if (!action) return;
     // In the player, a key that is already the site's own key for the action
     // goes straight to the site, untouched.
