@@ -2,6 +2,14 @@
 
 Update this at the end of every working session.
 
+## 2026-11-16: first release, v0.1.0
+
+Andrew asked for the first release after trying the builds on his TV box.
+Tagged `v0.1.0`; the release workflow builds the packages and makes a draft,
+which the agent then published as a pre-release at his request. The
+packaged build of exactly this commit was **not run by anyone before
+release**; the build Andrew tried was one commit of documentation earlier.
+
 ## 2026-11-16: first run on Andrew's TV box (his report) and the fixes
 
 Andrew ran the CI-built AppImage on his Linux TV box and reported four

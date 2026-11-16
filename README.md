@@ -4,9 +4,9 @@ An unofficial TV-style front end for watching Prime Video on a Linux HTPC,
 driven by a game controller, remote or keyboard.
 
 **Status: early development, usable for testing.** Browsing, search, playback
-and the player's controls work from a keyboard-style remote on the one setup
-tried so far (a Fedora virtual machine). It has not been tried on a real TV or
-with a physical game controller, and there is no published release yet. See
+and the player's controls work from a keyboard-style remote on the two setups
+tried so far (a Fedora virtual machine and the owner's Linux TV box). It has
+not been tried with a physical game controller. See
 [docs/STATUS.md](docs/STATUS.md) for exactly what has and has not been checked.
 
 > Tropic Video is an unofficial, independent project. It is not affiliated
@@ -57,10 +57,10 @@ the app does not read, store or log it.
 
 ## Installing
 
-There is no published release yet. Until there is, build it yourself (below),
-or download a build made by the project's "Build packages" workflow from the
-repository's Actions tab (you need to be signed in to GitHub). It contains an
-AppImage, a tarball and a Flatpak bundle.
+Download from the repository's
+[Releases page](https://github.com/AndrewGBest/Tropic-Video/releases): an
+AppImage, a tarball and a Flatpak bundle, for 64-bit Intel/AMD Linux. Or build
+it yourself (below).
 
 - **AppImage:** make it executable and run it.
 - **Flatpak bundle:** `flatpak install --user TropicVideo-x86_64.flatpak`,

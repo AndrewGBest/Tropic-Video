@@ -1,6 +1,6 @@
 {
   "name": "tropic-video",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Unofficial TV-style front end for watching Prime Video on Linux HTPCs",
   "private": true,
   "license": "GPL-3.0-only",
