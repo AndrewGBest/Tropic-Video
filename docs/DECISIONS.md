@@ -371,3 +371,18 @@ same path as search; nothing reads the field and the shell does not log the text
 **Known cost:** the highlighted key is visible to anyone looking at the TV.
 **Not verified:** the real sign-in pages; the agent cannot open them.
 
+
+## 2026-11-16: Which characters the on-screen keyboard must cover
+
+**Checked (Andrew's request):** what the service allows in sign-in emails and
+passwords. **No published list was found** for consumer accounts. The
+sign-in and registration pages state only a minimum length (six characters).
+The one precise symbol list found (`! @ # $ % ^ & * () <> [] {} | _ + - =`)
+is from the AWS account documentation, a different kind of account.
+**Decision:** cover all 95 printable ASCII characters (letters in both
+cases, digits, space and all 32 symbols), which is everything a standard US
+keyboard types and a superset of that list. A unit test in `test/osk.test.ts`
+checks every one is on some face of the keyboard.
+**Not covered:** anything outside ASCII (accented letters, £, €, other
+scripts). A password or address containing those needs a real keyboard.
+**Reopen if:** a user reports a character they cannot type.
