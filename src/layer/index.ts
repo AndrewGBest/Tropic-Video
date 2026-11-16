@@ -8,7 +8,7 @@ import { installPurchaseGuard } from './guard/purchase-guard';
 import { startPolling } from './input/gamepad';
 import { keyToAction, type Mode } from './input/keys';
 import { aboutTitle, HELP, NOTICE } from '../shared/about';
-import { isSecretField, OSK_ROWS, OskModel } from '../shared/osk';
+import { isSecretField, OskModel } from '../shared/osk';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
 import { findMainVideo, isPlayerActive, playerScope } from './player';
 import { edgeControl, isVisible, openDialog, SpatialNavigator } from './spatial/navigator';
@@ -59,17 +59,16 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
 
   const overlay = new Overlay(doc);
+  /** A scripted run never types a password or a one-time code (Hard rule 9). A person may. */
+  const keyboardBarred = (el: Element): boolean =>
+    options.automation && isSecretField(el.getAttribute('type'), el.getAttribute('autocomplete'));
   const nav = new SpatialNavigator(doc, {
     extraFocusable: adapter.selectors.extraFocusable,
     ignoreWithin: HOST_TAG,
     onFocusChange: (el) => {
       overlay.track(el);
       if (!el || !isTextEntry(el)) return;
-      if (isSecretField(el.getAttribute('type'), el.getAttribute('autocomplete'))) {
-        // Say why nothing opened, rather than leaving the remote with no way forward and no reason.
-        overlay.toast('Passwords and codes are typed on a real keyboard', 5000);
-        return;
-      }
+      if (keyboardBarred(el)) return;
       openOsk(el);
     },
     scope,
@@ -168,7 +167,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   let oskOpen = false;
   let aboutOpen = false;
   let oskSubmit = 'enter';
-  const drawOsk = (): void => overlay.keyboard(oskOpen ? OSK_ROWS : null, { row: osk.row, index: osk.index }, oskSubmit);
+  const drawOsk = (): void => overlay.keyboard(oskOpen ? osk.rows : null, { row: osk.row, index: osk.index }, oskSubmit);
   const isSearchField = (el: Element): boolean => {
     try {
       return el.matches([...adapter.selectors.searchInput, ...GENERIC_SEARCH].join(','));
@@ -190,6 +189,10 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
   const pressOsk = (): void => {
     const key = osk.key;
+    if (osk.switchPage()) {
+      drawOsk();
+      return;
+    }
     if (key.kind === 'char' || key.kind === 'space') {
       send({ kind: 'typeText', text: key.text ?? '' });
       return;
@@ -509,7 +512,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     if (!el || !isTextEntry(el) || el.closest(HOST_TAG)) return;
     if (nav.focused !== el) nav.focus(el);
     // Already the remote's focus from before (the field was left and the page came back to it).
-    else if (!oskOpen && !isSecretField(el.getAttribute('type'), el.getAttribute('autocomplete'))) openOsk(el);
+    else if (!oskOpen && !keyboardBarred(el)) openOsk(el);
   };
   const onFocusIn = (e: FocusEvent): void => adoptField(e.target instanceof Element ? e.target : null);
   doc.addEventListener('focusin', onFocusIn, true);

@@ -293,7 +293,7 @@ lets the site's own suggestions and form handling work unchanged.
 or the site's search form does not submit.
 **Limits:** lower-case letters, digits and four symbols. Deliberately not a
 password keyboard: sign-in is the user's business on the service's own page
-(Hard rule 9), with a real keyboard.
+(Hard rule 9), with a real keyboard. (Superseded 2026-11-16, below.)
 **Reopen if:** users need other scripts or capitals for search.
 
 ## 2026-11-14: The site's interface is the interface; own UI only where a remote needs it
@@ -353,4 +353,21 @@ focus outline rule. Nothing the site does changes: the buttons were already
 unusable, and they come back the moment the site enables them.
 **Reopen if:** the site starts using disabled buttons to tell the user
 something (a reason shown on them).
+
+## 2026-11-16: The on-screen keyboard may type passwords and codes
+
+**Decision (Andrew):** after trying to sign in on his TV box with only a
+remote, Andrew asked for the keyboard to come up on the sign-in, password
+and two-step pages, and then that it "needs to have all symbols for passwords
+and emails". Hard rule 9 used to say the app never types passwords or codes;
+it now says the app never reads, logs or stores them, and that the keyboard
+may pass a person's picks through. (Reading his two messages as the decision
+is the agent's interpretation; he was told the rule stood in the way first.)
+**How:** the keyboard gained capitals and a symbols face with every printable
+ASCII character. A pick goes layer to shell to `webContents.insertText`, the
+same path as search; nothing reads the field and the shell does not log the text.
+**What did not change:** agents and scripts never type credentials. Under
+`--automation` the keyboard does not open on password or one-time-code fields.
+**Known cost:** the highlighted key is visible to anyone looking at the TV.
+**Not verified:** the real sign-in pages; the agent cannot open them.
 

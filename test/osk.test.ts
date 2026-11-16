@@ -1,15 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { isSecretField, OSK_COLUMNS, OSK_ROWS, OskModel, typableText } from '../src/shared/osk';
+import { isSecretField, OSK_COLUMNS, OSK_PAGES, OskModel, typableText } from '../src/shared/osk';
 
 describe('on-screen keyboard layout', () => {
-  it('fills every row exactly', () => {
-    for (const row of OSK_ROWS) expect(row.reduce((n, k) => n + k.span, 0)).toBe(OSK_COLUMNS);
+  const pages = Object.values(OSK_PAGES);
+
+  it('fills every row exactly, on every face', () => {
+    for (const rows of pages) for (const row of rows) expect(row.reduce((n, k) => n + k.span, 0)).toBe(OSK_COLUMNS);
   });
 
-  it('has every letter and digit once, and the three action keys', () => {
-    const typed = OSK_ROWS.flat().filter((k) => k.kind === 'char').map((k) => k.text);
-    for (const c of 'abcdefghijklmnopqrstuvwxyz0123456789') expect(typed.filter((t) => t === c)).toHaveLength(1);
-    expect(OSK_ROWS.flat().map((k) => k.kind).filter((k) => k !== 'char').sort()).toEqual(['backspace', 'space', 'submit']);
+  it('has every letter and digit once on the letters face, and what an email address needs', () => {
+    const typed = OSK_PAGES.lower.flat().filter((k) => k.kind === 'char').map((k) => k.text);
+    for (const c of 'abcdefghijklmnopqrstuvwxyz0123456789@.-_') expect(typed.filter((t) => t === c)).toHaveLength(1);
+  });
+
+  it('can type every printable ASCII character across its faces', () => {
+    const typed = new Set(pages.flat(2).map((k) => k.text));
+    for (let code = 0x20; code < 0x7f; code++) expect(typed.has(String.fromCharCode(code)), String.fromCharCode(code)).toBe(true);
+  });
+
+  it('has space, delete and enter on every face', () => {
+    for (const rows of pages) {
+      const kinds = rows.flat().map((k) => k.kind);
+      for (const kind of ['space', 'backspace', 'submit']) expect(kinds).toContain(kind);
+    }
   });
 });
 
@@ -39,21 +52,53 @@ describe('OskModel', () => {
   it('lands on the wide key under the current one, and comes back up under its middle', () => {
     const m = new OskModel();
     m.row = 3;
-    m.index = 1; // "2", second column
+    m.index = 4; // "5", fifth column
     m.move('down');
     expect(m.key.kind).toBe('space');
-    m.index = 2; // "search", columns 7 to 9
+    m.index = 4; // "enter", the last two columns
     expect(m.move('down')).toBe(false);
     m.move('up');
-    expect(m.key.text).toBe('9');
+    expect(m.key.text).toBe('0');
     m.row = 3;
-    m.index = 5; // "6", sixth column, above "delete"
+    m.index = 6; // "7", seventh column, above "delete"
     m.move('down');
     expect(m.key.kind).toBe('backspace');
   });
 
   it('reports the top edge', () => {
     expect(new OskModel().move('up')).toBe(false);
+  });
+
+  it('shift gives capitals and back, keeping the highlight on shift', () => {
+    const m = new OskModel();
+    expect(m.switchPage()).toBe(false); // "a" is not a face key
+    m.row = 4;
+    m.index = 0;
+    expect(m.switchPage()).toBe(true);
+    expect(m.page).toBe('upper');
+    expect(m.key.kind).toBe('shift');
+    expect(m.rows[0]![0]!.text).toBe('A');
+    m.switchPage();
+    expect(m.page).toBe('lower');
+  });
+
+  it('goes to symbols and back, with the highlight on the key that returns', () => {
+    const m = new OskModel();
+    m.row = 4;
+    m.index = 1;
+    m.switchPage();
+    expect(m.page).toBe('symbols');
+    expect(m.key.kind).toBe('letters');
+    m.switchPage();
+    expect(m.page).toBe('lower');
+    expect(m.key.kind).toBe('symbols');
+  });
+
+  it('opens on small letters again after a reset', () => {
+    const m = new OskModel();
+    m.page = 'symbols';
+    m.reset();
+    expect(m.page).toBe('lower');
   });
 });
 
@@ -70,7 +115,7 @@ describe('typableText', () => {
 });
 
 describe('isSecretField', () => {
-  it('keeps the keyboard out of passwords and one-time codes', () => {
+  it('recognises passwords and one-time codes', () => {
     expect(isSecretField('password', null)).toBe(true);
     expect(isSecretField('PASSWORD', '')).toBe(true);
     expect(isSecretField('text', 'current-password')).toBe(true);

@@ -44,8 +44,12 @@ The reasoning for each is in `docs/LEGAL-GUARDRAILS.md`.
 8. **No reverse engineering of the service's apps.** The only inputs are pages
    served to a signed-in browser. No decompiling TV, mobile or desktop apps.
 9. **Credentials are the user's business.** Sign-in happens on the service's
-   own page. Never read, log, store or type passwords or one-time codes. Never
-   commit cookies, profiles, HAR files or anything captured from a signed-in session.
+   own page. Never read, log or store passwords or one-time codes. The
+   on-screen keyboard may pass a person's own key picks to those fields, as a
+   real keyboard would (Andrew's decision, 2026-11-16); an agent or script
+   never types them, and under `--automation` the keyboard stays out of them.
+   Never commit cookies, profiles, HAR files or anything captured from a
+   signed-in session.
 10. **Automation never spends money.** Any agent- or script-driven run uses
     `--automation`, which blocks purchase, rental, subscription and sign-up
     controls. Never disable or weaken the guard to get a test through.

@@ -121,9 +121,11 @@ What is deliberately not built (changed from the first version of this document)
 A new piece of own UI needs the same justification as the rows in the table:
 name the thing a remote user cannot do with the site's interface.
 
-Sign-in happens on the service's own page; the app never sees or stores the
-password, and the on-screen keyboard stays out of password and one-time-code
-fields.
+Sign-in happens on the service's own page. The on-screen keyboard can type
+into its fields, passwords and one-time codes included, so a TV box with only
+a remote can sign in. Each pick is passed to the page as typed text and
+nothing is read back, stored or logged. Scripted runs (`--automation`) never
+type into password or code fields.
 
 ### 5.3 System integration
 

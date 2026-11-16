@@ -161,13 +161,27 @@ try {
   await press('Enter'); // "l", under "b"
   await sleep(300);
   check('the on-screen keyboard types into the field', await evaluate('document.getElementById("search").value'), 'al');
-  for (let i = 0; i < 3; i++) await press('ArrowDown');
-  await press('Enter'); // bottom row under the second column is "space"
+  for (let i = 0; i < 3; i++) await press('ArrowDown'); // bottom row: shift
+  await press('ArrowRight');
+  await press('ArrowRight');
+  await press('Enter'); // "space"
   await press('ArrowRight');
   await press('Enter'); // "delete"
   await press('Enter');
   await sleep(300);
   check('space and delete work', await evaluate('document.getElementById("search").value'), 'a');
+  // Capitals and symbols: shift then "a", then the symbols face and "@".
+  for (let i = 0; i < 3; i++) await press('ArrowLeft');
+  await press('Enter'); // shift
+  for (let i = 0; i < 4; i++) await press('ArrowUp');
+  await press('Enter'); // "B": shift is two columns wide and up goes from its middle
+  for (let i = 0; i < 4; i++) await press('ArrowDown');
+  await press('ArrowRight');
+  await press('Enter'); // symbols face; highlight is on "abc"
+  for (let i = 0; i < 3; i++) await press('ArrowUp');
+  await press('Enter'); // "@", second key of the second row
+  await sleep(300);
+  check('capitals and symbols can be typed', await evaluate('document.getElementById("search").value'), 'aB@');
   await press('Escape');
   await press('Escape');
   check('back closes the keyboard and then leaves the field', await evaluate('document.activeElement?.id ?? ""'), '');

@@ -28,7 +28,8 @@ for a TV. The app adds what a remote needs:
   key presses.
 
 You sign in on the service's own page, exactly as in a browser, with a real
-keyboard. The app never sees your password.
+keyboard or the on-screen one. What you type goes to the page as typed text;
+the app does not read, store or log it.
 
 ## What it is not
 

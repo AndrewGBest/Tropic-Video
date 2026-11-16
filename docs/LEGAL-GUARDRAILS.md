@@ -29,7 +29,7 @@ device serial (see `DESIGN.md` section 2 for what was found in one such repo).
 | 6. Familiar layout, original material | Copyright in the service's artwork, icons, fonts and text; confusion about who made the app | Changed by Andrew on 2026-11-14 from "original design only". Layout and interaction conventions (a top bar, a banner, rows of cards, a highlighted focused card) are common to TV apps and are used as a reference. Everything the layer draws is made for this project, and rules 1 and 5 still keep the service's material and marks out. **[Guess]** that this leaves little risk; see the trade-dress note below. |
 | 7. Evidence-based selectors | None legal; reliability | Guessed selectors silently break. |
 | 8. No reverse engineering of apps | Licence breach; anti-circumvention if apps are protected | Reading a web page your browser was sent is ordinary use. Decompiling a TV app is not. |
-| 9. Credentials untouched | Privacy harm, account compromise | The app never needs them; the cookie jar stays on the user's disk. |
+| 9. Credentials untouched | Privacy harm, account compromise | The app never needs them; the cookie jar stays on the user's disk. The on-screen keyboard only passes key picks through, like a keyboard. |
 | 10. Automation never spends | Unauthorised charges on a real account | Enforced in the layer and by URL in the main process. |
 | 11. No telemetry | Privacy law exposure; user trust | Nothing leaves the machine except traffic to the service itself. |
 | 12. Least privilege | Security of the user's machine | The page is untrusted code; it gets no path into the app. |
