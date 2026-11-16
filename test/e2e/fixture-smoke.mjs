@@ -172,6 +172,17 @@ try {
   await press('Escape');
   check('back closes the keyboard and then leaves the field', await evaluate('document.activeElement?.id ?? ""'), '');
 
+  // A field the page focuses by itself (as a sign-in page does) gets the keyboard without a key press.
+  await evaluate('document.getElementById("search").value = ""; document.getElementById("search").focus()');
+  await sleep(200);
+  check('a field the page focused becomes the remote focus', await focused(), 'search');
+  await press('Enter'); // "a", on the keyboard that opened by itself
+  await sleep(300);
+  check('the keyboard is already open on it', await evaluate('document.getElementById("search").value'), 'a');
+  await evaluate('document.getElementById("search").value = ""');
+  await press('Escape');
+  await press('Escape');
+
   // A pop-up the page opens takes the focus, keeps it, and gives it back.
   for (let i = 0; i < 8 && (await focused()) !== 'info'; i++) await press('ArrowDown');
   check('the pop-up button can be reached', await focused(), 'info');

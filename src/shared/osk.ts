@@ -27,7 +27,7 @@ export const OSK_ROWS: readonly (readonly OskKey[])[] = [
   [
     { kind: 'space', label: 'space', text: ' ', span: 4 },
     { kind: 'backspace', label: 'delete', span: 3 },
-    { kind: 'submit', label: 'search', span: 3 },
+    { kind: 'submit', label: 'enter', span: 3 },
   ],
 ];
 

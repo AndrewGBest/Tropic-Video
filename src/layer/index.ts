@@ -64,7 +64,13 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     ignoreWithin: HOST_TAG,
     onFocusChange: (el) => {
       overlay.track(el);
-      if (el && isTextEntry(el) && !isSecretField(el.getAttribute('type'), el.getAttribute('autocomplete'))) openOsk();
+      if (!el || !isTextEntry(el)) return;
+      if (isSecretField(el.getAttribute('type'), el.getAttribute('autocomplete'))) {
+        // Say why nothing opened, rather than leaving the remote with no way forward and no reason.
+        overlay.toast('Passwords and codes are typed on a real keyboard', 5000);
+        return;
+      }
+      openOsk(el);
     },
     scope,
     skip: [...adapter.selectors.rowPrev, ...adapter.selectors.rowNext],
@@ -161,9 +167,19 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const osk = new OskModel();
   let oskOpen = false;
   let aboutOpen = false;
-  const drawOsk = (): void => overlay.keyboard(oskOpen ? OSK_ROWS : null, { row: osk.row, index: osk.index });
-  const openOsk = (): void => {
+  let oskSubmit = 'enter';
+  const drawOsk = (): void => overlay.keyboard(oskOpen ? OSK_ROWS : null, { row: osk.row, index: osk.index }, oskSubmit);
+  const isSearchField = (el: Element): boolean => {
+    try {
+      return el.matches([...adapter.selectors.searchInput, ...GENERIC_SEARCH].join(','));
+    } catch {
+      return false;
+    }
+  };
+  const openOsk = (field: Element): void => {
     if (!oskOpen) osk.reset();
+    // The key says what it does: it only searches in a search field.
+    oskSubmit = isSearchField(field) ? 'search' : 'enter';
     oskOpen = true;
     drawOsk();
   };
@@ -486,6 +502,19 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
   view.addEventListener('keydown', onKey, true);
 
+  // A text field the page focused by itself (a sign-in page puts the cursor
+  // in its first field): take it as the remote's focus too, so the ring is on
+  // it and the on-screen keyboard is up without a key press.
+  const adoptField = (el: Element | null): void => {
+    if (!el || !isTextEntry(el) || el.closest(HOST_TAG)) return;
+    if (nav.focused !== el) nav.focus(el);
+    // Already the remote's focus from before (the field was left and the page came back to it).
+    else if (!oskOpen && !isSecretField(el.getAttribute('type'), el.getAttribute('autocomplete'))) openOsk(el);
+  };
+  const onFocusIn = (e: FocusEvent): void => adoptField(e.target instanceof Element ? e.target : null);
+  doc.addEventListener('focusin', onFocusIn, true);
+  adoptField(doc.activeElement);
+
   const onPointer = (): void => {
     // The shell's own nudge (see revealControls) is not the user reaching for a mouse.
     if (Date.now() < ignorePointerUntil) return;
@@ -526,6 +555,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     notice: (text) => overlay.toast(text, 6000),
     stop: () => {
       view.removeEventListener('keydown', onKey, true);
+      doc.removeEventListener('focusin', onFocusIn, true);
       view.removeEventListener('mousemove', onPointer);
       view.clearInterval(playbackTimer);
       view.clearInterval(searchPoll);

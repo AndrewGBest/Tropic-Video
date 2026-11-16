@@ -62,6 +62,7 @@ export class Overlay {
   private readonly toastEl: HTMLElement;
   private readonly oskEl: HTMLElement;
   private readonly aboutEl: HTMLElement;
+  private readonly host: HTMLElement;
   private target: Element | null = null;
   private toastTimer: number | undefined;
   private raf = 0;
@@ -90,6 +91,25 @@ export class Overlay {
     this.aboutEl.setAttribute('role', 'dialog');
     root.append(this.ring, this.toastEl, this.oskEl, this.aboutEl);
     doc.documentElement.append(host);
+    this.host = host;
+    // When the site puts its player in fullscreen, only that element and the
+    // browser's top layer are drawn, so the ring and keyboard would vanish.
+    // A manual popover lives in the top layer; showing it again after each
+    // fullscreen change puts it back in front.
+    if (typeof host.showPopover === 'function') {
+      host.setAttribute('popover', 'manual');
+      this.raise();
+      doc.addEventListener('fullscreenchange', () => this.raise());
+    }
+  }
+
+  private raise(): void {
+    try {
+      if (this.host.matches(':popover-open')) this.host.hidePopover();
+      this.host.showPopover();
+    } catch {
+      // Not connected yet, or no popover support: the overlay still works outside fullscreen.
+    }
   }
 
   track(el: Element | null): void {
@@ -147,7 +167,7 @@ export class Overlay {
   }
 
   /** Draws the on-screen keyboard with one key highlighted; `null` hides it. */
-  keyboard(rows: readonly (readonly OskKey[])[] | null, active?: { row: number; index: number }): void {
+  keyboard(rows: readonly (readonly OskKey[])[] | null, active?: { row: number; index: number }, submitLabel?: string): void {
     if (!rows) {
       this.oskEl.classList.remove('show');
       return;
@@ -158,7 +178,7 @@ export class Overlay {
         const el = this.doc.createElement('div');
         el.className = `key${key.span > 1 ? ' wide' : ''}${active && active.row === r && active.index === i ? ' on' : ''}`;
         el.style.gridColumn = `span ${key.span}`;
-        el.textContent = key.label;
+        el.textContent = key.kind === 'submit' && submitLabel ? submitLabel : key.label;
         keys.push(el);
       }),
     );
