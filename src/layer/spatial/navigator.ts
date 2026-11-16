@@ -198,11 +198,19 @@ function toRect(el: Element): Rect {
   return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
 }
 
+const FOOTER = 'footer, [role="contentinfo"]';
+
+/** Moves closer together than this are a held key (or a very quick thumb). */
+const RAPID_MS = 220;
+
 export class SpatialNavigator {
   private current: Element | null = null;
   private zoomed: Element | null = null;
   /** Where focus last was in each sideways-scrolling row. */
   private readonly rowMemory = new WeakMap<Element, Element>();
+  /** When the last move was made, to tell a held key from single presses. */
+  private lastMoveAt = 0;
+  private rapid = false;
 
   constructor(
     private readonly doc: Document,
@@ -214,9 +222,16 @@ export class SpatialNavigator {
     return this.current;
   }
 
-  candidates(): Element[] {
+  /**
+   * Everything focus can go to. With `near`, only what is within a few
+   * screens above or below: far down a long page the full list takes long
+   * enough to build that held keys queue up.
+   */
+  candidates(near = false): Element[] {
     const view = this.doc.defaultView;
     if (!view) return [];
+    const above = -2 * view.innerHeight;
+    const below = 3 * view.innerHeight;
     const selector = [FOCUSABLE, ...(this.opts.extraFocusable ?? [])].join(',');
     const scope = this.opts.scope?.() ?? null;
     const skip = this.skipSelector();
@@ -224,6 +239,10 @@ export class SpatialNavigator {
     for (const el of (scope ?? this.doc).querySelectorAll(selector)) {
       if (this.opts.ignoreWithin && el.closest(this.opts.ignoreWithin)) continue;
       if (skip && el.matches(skip)) continue;
+      if (near) {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < above || r.top > below) continue;
+      }
       if (!isVisible(el, view)) continue;
       seen.add(el);
     }
@@ -283,10 +302,10 @@ export class SpatialNavigator {
   }
 
   /** Focuses the candidate whose centre is nearest to a point, for picking up where a vanished control was. */
-  focusNearest(point: { x: number; y: number }): boolean {
+  focusNearest(point: { x: number; y: number }, pool: readonly Element[] = this.candidates()): boolean {
     let best: Element | null = null;
     let bestDistance = Infinity;
-    for (const el of this.candidates()) {
+    for (const el of pool) {
       const r = el.getBoundingClientRect();
       const d = Math.hypot((r.left + r.right) / 2 - point.x, (r.top + r.bottom) / 2 - point.y);
       if (d < bestDistance) {
@@ -307,7 +326,7 @@ export class SpatialNavigator {
   }
 
   /** Focuses the first page control wholly on screen, reading order; pinned bars only if there is nothing else. */
-  focusFirstOnScreen(): boolean {
+  focusFirstOnScreen(allowPinned = true): boolean {
     const view = this.doc.defaultView;
     if (!view) return false;
     const onScreen = this.candidates().filter((el) => {
@@ -316,7 +335,7 @@ export class SpatialNavigator {
     });
     const cache = new Map<Element, boolean>();
     const flowing = onScreen.filter((el) => !isPinned(el, view, cache));
-    const pool = flowing.length ? flowing : onScreen;
+    const pool = flowing.length || !allowPinned ? flowing : onScreen;
     return this.focus(pool[pickInitial(pool.map(toRect))] ?? null);
   }
 
@@ -327,14 +346,35 @@ export class SpatialNavigator {
   }
 
   move(dir: Direction): boolean {
-    const all = this.candidates();
+    // Measured from the end of the last move: on a long page a move takes
+    // time itself, and that must not make a held key look like single presses.
+    this.rapid = Date.now() - this.lastMoveAt < RAPID_MS;
+    // First among what is near the screen, which is quick; the whole page
+    // only when nothing near lies that way.
+    const moved = this.step(dir, this.candidates(true)) ?? this.step(dir, this.candidates()) ?? false;
+    this.lastMoveAt = Date.now();
+    return moved;
+  }
+
+  /** One attempt at a move among `all`. Null when nothing lies in that direction. */
+  private step(dir: Direction, all: Element[]): boolean | null {
     const from = this.focused;
+    const view = this.doc.defaultView;
     if (!from) {
+      // Focus was lost part-way down a page (what had it was replaced as
+      // more of the page loaded): carry on from what is on screen, not from the top.
+      // If nothing is on screen yet, keep scrolling the way the key points
+      // rather than jumping to the bar at the top.
+      if (view && view.scrollY > view.innerHeight / 2) {
+        if (!this.focusFirstOnScreen(false) && (dir === 'up' || dir === 'down')) {
+          view.scrollBy({ top: (dir === 'down' ? 0.8 : -0.8) * view.innerHeight, behavior: 'instant' });
+        }
+        return true;
+      }
       const i = pickInitial(all.map(toRect));
       return this.focus(all[i] ?? null);
     }
     let others = all.filter((el) => el !== from);
-    const view = this.doc.defaultView;
     // Up and down follow the page. A bar pinned to the screen is always
     // "nearest" once the page has scrolled under it, and focusing it jumps
     // the page back to where the bar lives; so from page content it is only
@@ -347,9 +387,25 @@ export class SpatialNavigator {
       }
     }
     const i = pickNext(toRect(from), others.map(toRect), dir);
-    if (i === -1) return false;
+    if (i === -1) return null;
     let target = others[i] ?? null;
     if (target && (dir === 'up' || dir === 'down')) target = this.rowEntry(target, from, others);
+    // A held key stops at the last row and does not run on into the page's
+    // footer: more rows may be about to load in front of it, and the footer
+    // would carry the focus away from them. A single press still goes there.
+    if (target && this.rapid && dir === 'down' && target.closest(FOOTER) && !from.closest(FOOTER)) return true;
+    // A held key must not run ahead of a page that loads more as it scrolls:
+    // a target far outside the screen may only be the next thing loaded so
+    // far (the footer, with rows still to come before it). Scroll toward it
+    // and let the next repeat decide again.
+    if (target && view && this.rapid && (dir === 'up' || dir === 'down')) {
+      const r = target.getBoundingClientRect();
+      const far = dir === 'down' ? r.top > view.innerHeight : r.bottom < 0;
+      if (far) {
+        view.scrollBy({ top: (dir === 'down' ? 0.8 : -0.8) * view.innerHeight, behavior: 'instant' });
+        return true;
+      }
+    }
     return this.focus(target);
   }
 
@@ -385,7 +441,10 @@ export class SpatialNavigator {
     const all = this.candidates();
     const from: Rect = { left: point.x, top: point.y, right: point.x, bottom: point.y };
     const i = pickNext(from, all.map(toRect), dir);
-    return i === -1 ? this.focusNearest(point) : this.focus(all[i] ?? null);
+    if (i !== -1) return this.focus(all[i] ?? null);
+    // Not a slider when there is anything else: arriving on the volume control is no use to anyone.
+    const plain = all.filter((el) => !(el instanceof HTMLInputElement && el.type === 'range'));
+    return this.focusNearest(point, plain.length ? plain : all);
   }
 
   focus(el: Element | null): boolean {
@@ -412,9 +471,10 @@ export class SpatialNavigator {
     const bottom = view ? top + el.getBoundingClientRect().height : Infinity;
     if (view && bottom <= view.innerHeight) {
       // Only this: a second scroll request would replace it and stop short of the top.
-      view.scrollTo({ top: 0, behavior: 'smooth' });
+      view.scrollTo({ top: 0, behavior: this.rapid ? 'instant' : 'smooth' });
     } else {
-      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+      // With a key held, a smooth scroll is restarted by every repeat and never arrives.
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: this.rapid ? 'instant' : 'smooth' });
     }
     this.opts.onFocusChange?.(el);
     return true;

@@ -15,6 +15,14 @@ problems. What was done, and how each was checked:
 | Fullscreen button "does nothing" and the ring goes | The site puts its player in element fullscreen, where only that element and the top layer are drawn | The overlay is a manual popover, re-shown on each fullscreen change | Live site in the VM: ring visible and movable in fullscreen |
 | Live video: cannot reach Pause or the 10-second skips | On the station tried (one free news station) the site disables those three buttons itself | None possible. Down now lands on the nearest enabled control instead of Close | Live site in the VM. On an on-demand title Pause and both skips are reachable |
 
+Second round of reports the same day:
+
+| Report | Cause | Fix | Checked |
+|---|---|---|---|
+| Live video shows buttons that cannot be used | The site disables them | A disabled button inside the player is hidden by the TV stylesheet (`[data-tropic-player] button:disabled`) | Live site in the VM: Pause, both skips and Speed hidden on the live station; all present on an on-demand title before the change |
+| Fast scrolling "bugs out" or jumps to the top | Far down a long page one move took about 0.3 s (every control on the page was examined), so held presses queued and each restarted a smooth scroll; the selection ran through the loaded rows into the footer, and when a row was re-rendered focus restarted from the top bar | Moves look near the screen first; a held key scrolls instantly, stops at the last loaded row instead of entering the footer, and lost focus resumes from what is on screen | Live site in the VM, 200 Down then 120 Up at 40 ms: focus stays centred, waits while rows load, carries on, and stops at the top. A key held on a real remote on the TV box is **not checked** |
+| The ring bounces while the page scrolls | The ring eased toward its target while the target was itself moving | The ring has no easing; it is placed on its target every frame | By reading the code; not judged by eye |
+
 Seen on the way, not fixed: a title page with a background trailer starts
 with no focus and the first Down goes to the top bar, not the play button; a
 station's pop-up puts first focus on its close button, not "Watch Live".

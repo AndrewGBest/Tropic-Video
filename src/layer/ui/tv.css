@@ -17,6 +17,15 @@
   z-index: 3;
 }
 
+/*
+ * In the player, a button the site has disabled cannot be used, and a remote
+ * cannot reach it. It is hidden rather than left looking like something to
+ * aim for (a live station's pause and skip buttons, for example).
+ */
+[data-tropic-player] button:disabled {
+  visibility: hidden !important;
+}
+
 /* Remote and controller users have no pointer. */
 html.tropic-no-pointer,
 html.tropic-no-pointer * {

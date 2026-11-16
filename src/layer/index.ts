@@ -529,6 +529,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const playbackTimer = view.setInterval(() => {
     const v = findMainVideo(doc, playerRoots);
     const playing = !!v && !v.paused && !v.ended;
+    // Mark the player so the stylesheet can hide controls the site has disabled.
+    if (v && inPlayer()) playerScope(v, playerRoots).setAttribute('data-tropic-player', '');
     // Focus left over from the page behind must not carry into the player, and
     // the ring must not sit on the picture unless the user is on a control.
     // (onPlayerControl drops focus that is outside the player. Focus on a

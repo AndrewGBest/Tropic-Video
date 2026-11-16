@@ -341,3 +341,16 @@ sandbox and loads the site. Playback, a controller, sleep inhibition and
 media keys inside the sandbox were not tried.
 **Reopen if:** Flatpak gains a narrower input-device permission that
 controllers work with.
+
+## 2026-11-16: Hide player buttons the site has disabled
+
+**Decision (Andrew's request):** inside the player, a button the site itself
+has disabled is hidden by the TV stylesheet. On a live station the site
+disables pause and the skip buttons; a remote cannot reach them, and showing
+them invites trying.
+**Why this is within Hard rule 4:** it is a user style on the page, like the
+focus outline rule. Nothing the site does changes: the buttons were already
+unusable, and they come back the moment the site enables them.
+**Reopen if:** the site starts using disabled buttons to tell the user
+something (a reason shown on them).
+

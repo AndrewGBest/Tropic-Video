@@ -10,7 +10,6 @@ const CSS = `
 .ring {
   position: fixed; box-sizing: border-box; border: 4px solid #fff; border-radius: 10px;
   box-shadow: 0 0 0 3px rgba(0,0,0,.85), 0 0 24px 4px rgba(255,255,255,.35);
-  transition: left .09s ease-out, top .09s ease-out, width .09s ease-out, height .09s ease-out;
   display: none;
 }
 .ring.bump-left { animation: bump-left .18s ease-out; }

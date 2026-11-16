@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { edgeControl, FOCUS_ATTR, openDialog, SpatialNavigator, ZOOM_ATTR } from '../src/layer/spatial/navigator';
 
 // jsdom has no layout engine, so each element's rectangle is read from data-rect="left,top,width,height".
@@ -329,6 +329,7 @@ describe('moving from a point', () => {
   const bar = `
     <button id="close" data-rect="20,16,40,40">x</button>
     <button id="subs" data-rect="710,16,40,40">s</button>
+    <input type="range" id="volume" data-rect="500,65,30,150">
     <button id="pause" disabled data-rect="455,470,50,50">p</button>`;
 
   it('goes to the control in that direction when there is one', () => {
@@ -338,7 +339,7 @@ describe('moving from a point', () => {
     expect(nav.focused?.id).toBe('next');
   });
 
-  it('takes the nearest control, not the first, when nothing lies that way', () => {
+  it('takes the nearest button, not the first control or a slider, when nothing lies that way', () => {
     document.body.innerHTML = bar;
     const nav = new SpatialNavigator(document);
     expect(nav.moveFrom({ x: 480, y: 270 }, 'down')).toBe(true);
@@ -442,5 +443,58 @@ describe('pop-ups', () => {
     document.getElementById('open')!.remove();
     expect(openDialog(document)).toBeNull();
     expect(ids(nav.candidates())).toEqual(['behind']);
+  });
+});
+
+describe('a held key on a page that loads more as it scrolls', () => {
+  // Two rows loaded so far, then a long gap, then the footer.
+  const page = `
+    <a href="#" id="r1" data-rect="0,100,100,60">x</a>
+    <a href="#" id="r2" data-rect="0,300,100,60">x</a>
+    <a href="#" id="footer" data-rect="0,2500,100,30">x</a>`;
+  let scrolled: number[];
+  beforeEach(() => {
+    document.body.innerHTML = page;
+    scrolled = [];
+    window.scrollBy = ((o: ScrollToOptions) => void scrolled.push(o.top ?? 0)) as typeof window.scrollBy;
+    window.scrollTo = (() => undefined) as typeof window.scrollTo;
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  const at = (ms: number): void => void vi.spyOn(Date, 'now').mockReturnValue(ms);
+
+  it('scrolls toward a far target instead of jumping to it', () => {
+    const nav = new SpatialNavigator(document);
+    at(10_000);
+    nav.focus(document.getElementById('r1'));
+    nav.move('down');
+    at(10_050);
+    expect(nav.move('down')).toBe(true);
+    expect(nav.focused?.id).toBe('r2');
+    expect(scrolled).toEqual([0.8 * window.innerHeight]);
+  });
+
+  it('still jumps on a single press', () => {
+    const nav = new SpatialNavigator(document);
+    at(10_000);
+    nav.focus(document.getElementById('r2'));
+    at(20_000);
+    nav.move('down');
+    expect(nav.focused?.id).toBe('footer');
+    expect(scrolled).toEqual([]);
+  });
+
+  it('carries on from what is on screen when the focused element is replaced part-way down', () => {
+    const nav = new SpatialNavigator(document);
+    nav.focus(document.getElementById('r2'));
+    document.getElementById('r2')!.remove();
+    // The page is scrolled down: the first row is above the screen.
+    document.getElementById('r1')!.setAttribute('data-rect', '0,-900,100,60');
+    document.body.insertAdjacentHTML('beforeend', '<a href="#" id="fresh" data-rect="0,320,100,60">x</a>');
+    Object.defineProperty(window, 'scrollY', { value: 1200, configurable: true });
+    at(30_000);
+    nav.move('down');
+    expect(nav.focused?.id).toBe('fresh');
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
   });
 });
