@@ -1,7 +1,7 @@
 {
   "name": "tropic-video",
   "version": "0.1.0",
-  "description": "Unofficial Prime Video TV front end for Linux. Not affiliated with Amazon.",
+  "description": "Unofficial Prime Video for TV on Linux. Not affiliated with Amazon.",
   "private": true,
   "license": "GPL-3.0-only",
   "main": "dist/main.js",
