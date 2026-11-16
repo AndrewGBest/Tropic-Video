@@ -2,6 +2,23 @@
 
 Update this at the end of every working session.
 
+## 2026-11-16: first run on Andrew's TV box (his report) and the fixes
+
+Andrew ran the CI-built AppImage on his Linux TV box and reported four
+problems. What was done, and how each was checked:
+
+| Report | Cause | Fix | Checked |
+|---|---|---|---|
+| Sign-in: no keyboard until Down is pressed | The page focuses its first field by itself; the layer only opened the keyboard for focus it had moved | The layer adopts a text field the page focuses (`focusin`) | End-to-end fixture only. The agent cannot open the sign-in page (the automation guard blocks the signed-out site), so **not checked on the real sign-in page** |
+| The keyboard's last key says "search" | Fixed label | "enter", except in a search field | Fixture; label not asserted (closed shadow root) |
+| Same on the password and two-step pages | Hard rule 9: the keyboard stays out of password and one-time-code fields | A message now says so. **Typing these with the remote needs Andrew to change rule 9**; not done | Not checked |
+| Fullscreen button "does nothing" and the ring goes | The site puts its player in element fullscreen, where only that element and the top layer are drawn | The overlay is a manual popover, re-shown on each fullscreen change | Live site in the VM: ring visible and movable in fullscreen |
+| Live video: cannot reach Pause or the 10-second skips | On the station tried (one free news station) the site disables those three buttons itself | None possible. Down now lands on the nearest enabled control instead of Close | Live site in the VM. On an on-demand title Pause and both skips are reachable |
+
+Seen on the way, not fixed: a title page with a background trailer starts
+with no focus and the first Down goes to the top bar, not the play button; a
+station's pop-up puts first focus on its close button, not "Watch Live".
+
 ## As of 2026-11-13 (session 2, Andrew's Fedora VM, live site reachable)
 
 ### Changed in session 2

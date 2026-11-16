@@ -324,6 +324,28 @@ describe('styled radios and checkboxes', () => {
   });
 });
 
+describe('moving from a point', () => {
+  // A player whose bottom controls are disabled: only the top bar can be reached.
+  const bar = `
+    <button id="close" data-rect="20,16,40,40">x</button>
+    <button id="subs" data-rect="710,16,40,40">s</button>
+    <button id="pause" disabled data-rect="455,470,50,50">p</button>`;
+
+  it('goes to the control in that direction when there is one', () => {
+    document.body.innerHTML = bar + '<button id="next" data-rect="820,485,110,30">n</button>';
+    const nav = new SpatialNavigator(document);
+    nav.moveFrom({ x: 480, y: 270 }, 'down');
+    expect(nav.focused?.id).toBe('next');
+  });
+
+  it('takes the nearest control, not the first, when nothing lies that way', () => {
+    document.body.innerHTML = bar;
+    const nav = new SpatialNavigator(document);
+    expect(nav.moveFrom({ x: 480, y: 270 }, 'down')).toBe(true);
+    expect(nav.focused?.id).toBe('subs');
+  });
+});
+
 describe('transparent hit areas', () => {
   it('keeps one target where a link and a transparent button share a box', () => {
     document.body.innerHTML = `

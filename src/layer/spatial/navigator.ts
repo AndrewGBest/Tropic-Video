@@ -375,12 +375,17 @@ export class SpatialNavigator {
     return first;
   }
 
-  /** Moves from a point on screen rather than from the focused element. Falls back to the first candidate. */
+  /**
+   * Moves from a point on screen rather than from the focused element. With
+   * nothing in that direction it takes the control nearest the point (a live
+   * station's player has its bottom controls disabled; landing on the far
+   * corner's Close button there would be a surprise).
+   */
   moveFrom(point: { x: number; y: number }, dir: Direction): boolean {
     const all = this.candidates();
     const from: Rect = { left: point.x, top: point.y, right: point.x, bottom: point.y };
     const i = pickNext(from, all.map(toRect), dir);
-    return this.focus(all[i === -1 ? pickInitial(all.map(toRect)) : i] ?? null);
+    return i === -1 ? this.focusNearest(point) : this.focus(all[i] ?? null);
   }
 
   focus(el: Element | null): boolean {
