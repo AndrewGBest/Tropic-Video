@@ -10,6 +10,13 @@ which the agent then published as a pre-release at his request. The
 packaged build of exactly this commit was **not run by anyone before
 release**; the build Andrew tried was one commit of documentation earlier.
 
+## 2026-11-16: second release, v0.1.1
+
+Andrew asked for a release of everything since v0.1.0: the window opening
+before the playback component is ready, the OK-button keys, pausing and
+minimising when the app is left, and the new tagline. Published as a
+pre-release, like v0.1.0.
+
 ## 2026-11-16: OK-button keys, and stopping when the app is left
 
 Andrew: the Flatpak does launch from the desktop (only Discover's Launch
