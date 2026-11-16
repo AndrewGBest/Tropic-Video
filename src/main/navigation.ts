@@ -78,6 +78,15 @@ export function noticePageUrl(reason: BlockReason, url: string): string {
   return noticePage('page blocked', 'This page was blocked', [why], { label: 'Blocked address', value: describeBlockedUrl(url) });
 }
 
+/**
+ * Shown the moment the window opens, while the playback component is made
+ * ready (a download on the first run). Without it nothing appears until that
+ * finishes, and a slow or blocked download looks like an app that never started.
+ */
+export function startingPageUrl(): string {
+  return noticePage('starting', 'Starting', ['Getting the playback component ready. On the first run this is a download and can take a moment.']);
+}
+
 /** Chromium's code for a navigation that was cancelled, which is what a refused navigation looks like. Not a failure. */
 const ERR_ABORTED = -3;
 

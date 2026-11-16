@@ -10,6 +10,22 @@ which the agent then published as a pre-release at his request. The
 packaged build of exactly this commit was **not run by anyone before
 release**; the build Andrew tried was one commit of documentation earlier.
 
+## 2026-11-16: Flatpak from v0.1.0 "does nothing" on Andrew's box (open)
+
+Andrew installed the v0.1.0 Flatpak through Discover and Launch showed
+nothing. **Not reproduced:** the same file, installed for the user in the VM
+and started with the launcher's exact command plus `--automation`, opened and
+fetched Widevine. The cause on his box is **unknown** until he runs
+`flatpak run io.github.andrewgbest.TropicVideo` in a terminal and reports
+what it prints.
+
+One real defect found while looking, fixed after v0.1.0: the window was only
+created after the Widevine component was ready, so a slow or stuck first-run
+download showed nothing at all, and further launches quit silently behind
+the first. The window now opens at once on a "Starting" notice and the site
+loads when the component is ready or after 45 seconds. Whether this is what
+he hit is a **guess**.
+
 ## 2026-11-16: first run on Andrew's TV box (his report) and the fixes
 
 Andrew ran the CI-built AppImage on his Linux TV box and reported four

@@ -16,6 +16,7 @@ import {
   isLoadFailure,
   noticePageUrl,
   offlinePageUrl,
+  startingPageUrl,
   retryDelaySeconds,
 } from './navigation';
 
@@ -84,7 +85,7 @@ function startUrl(): string {
   return HOME_URL;
 }
 
-function createWindow(): BrowserWindow {
+function createWindow(ready: Promise<void>): BrowserWindow {
   const boot = encodeURIComponent(
     JSON.stringify({ options: { ...options, version: app.getVersion(), keys: userConfig.keys, buttons: userConfig.buttons ?? {} }, adapter: loadAdapter() }),
   );
@@ -192,7 +193,12 @@ function createWindow(): BrowserWindow {
     void wc.insertCSS(tvCss, { cssOrigin: 'user' });
   });
 
-  void wc.loadURL(startUrl());
+  // The window is up at once with a notice; the site loads when the playback
+  // component is ready, so protected playback works on the first page.
+  void wc.loadURL(startingPageUrl());
+  void ready.then(() => {
+    if (!wc.isDestroyed()) void wc.loadURL(startUrl());
+  });
   return win;
 }
 
@@ -293,29 +299,6 @@ async function main(): Promise<void> {
   await app.whenReady();
   app.userAgentFallback = browserUserAgent(app.userAgentFallback);
 
-  let widevine: unknown = 'unavailable: not a castLabs Electron build';
-  if (components) {
-    try {
-      await components.whenReady();
-      widevine = components.status();
-    } catch (err) {
-      widevine = `component error: ${String(err)}`;
-    }
-  }
-  console.log('[tropic-video] widevine component:', JSON.stringify(widevine));
-
-  if (options.spike) {
-    spikeReport = {
-      startedAt: new Date().toISOString(),
-      versions: process.versions,
-      userAgent: app.userAgentFallback,
-      widevineComponent: widevine,
-      events: [],
-    };
-    saveSpikeReport();
-    console.log('[tropic-video] spike report:', join(app.getPath('userData'), 'spike-report.json'));
-  }
-
   // Grant only what playback needs; refuse camera, microphone, location, notifications and the rest.
   const GRANTED = new Set(['fullscreen', 'mediaKeySystem']);
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
@@ -324,7 +307,40 @@ async function main(): Promise<void> {
 
   userConfig = loadConfig();
   wireMessages();
-  const win = createWindow();
+
+  // The window opens before the component is ready, never after: on a first
+  // run the component is a download, and a slow one must not look like an
+  // app that did not start. If it is still not ready after a while the site
+  // is loaded anyway, so browsing works and the terminal says what is missing.
+  const COMPONENT_WAIT_MS = 45_000;
+  const componentsReady = (async (): Promise<void> => {
+    let widevine: unknown = 'unavailable: not a castLabs Electron build';
+    if (components) {
+      try {
+        const timedOut = await Promise.race([
+          components.whenReady().then(() => false),
+          new Promise<boolean>((resolve) => setTimeout(() => resolve(true), COMPONENT_WAIT_MS)),
+        ]);
+        widevine = timedOut ? `not ready after ${COMPONENT_WAIT_MS / 1000} seconds; protected playback may fail` : components.status();
+      } catch (err) {
+        widevine = `component error: ${String(err)}`;
+      }
+    }
+    console.log('[tropic-video] widevine component:', JSON.stringify(widevine));
+    if (options.spike) {
+      spikeReport = {
+        startedAt: new Date().toISOString(),
+        versions: process.versions,
+        userAgent: app.userAgentFallback,
+        widevineComponent: widevine,
+        events: [],
+      };
+      saveSpikeReport();
+      console.log('[tropic-video] spike report:', join(app.getPath('userData'), 'spike-report.json'));
+    }
+  })();
+
+  const win = createWindow(componentsReady);
   app.on('second-instance', () => {
     if (win.isMinimized()) win.restore();
     win.focus();

@@ -6,6 +6,7 @@ import {
   isLoadFailure,
   noticePageUrl,
   offlinePageUrl,
+  startingPageUrl,
   retryDelaySeconds,
 } from '../src/main/navigation';
 
@@ -117,3 +118,12 @@ describe('load failures', () => {
     expect(decode(offlinePageUrl('', 5))).toContain('no details');
   });
 });
+
+describe('starting page', () => {
+  it('says the app is starting and why it may take a moment', () => {
+    const page = decodeURIComponent(startingPageUrl());
+    expect(page).toContain('Starting');
+    expect(page).toContain('first run');
+  });
+});
+

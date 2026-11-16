@@ -297,14 +297,15 @@ try {
       const cdp = await connect(page.webSocketDebuggerUrl);
       // The target can be listed before the page has rendered; wait for its text.
       let text = '';
-      for (let i = 0; i < 50 && !text; i++) {
+      // The window opens on a "Starting" notice; wait for the one under test.
+      for (let i = 0; i < 100 && (!text || text.startsWith('Starting')); i++) {
         try {
           const r = await cdp.send('Runtime.evaluate', { expression: 'document.body?.innerText ?? ""', returnByValue: true });
           text = typeof r.result.value === 'string' ? r.result.value : '';
         } catch {
           // The notice page is still being put in place; ask again.
         }
-        if (!text) await sleep(100);
+        if (!text || text.startsWith('Starting')) await sleep(100);
       }
       check(
         'the notice names the blocked address, the cause and the way out, and no query',
@@ -449,14 +450,15 @@ try {
     if (notice) {
       const cdp = await connect(notice.webSocketDebuggerUrl);
       let text = '';
-      for (let i = 0; i < 50 && !text; i++) {
+      // The window opens on a "Starting" notice; wait for the one under test.
+      for (let i = 0; i < 100 && (!text || text.startsWith('Starting')); i++) {
         try {
           const r = await cdp.send('Runtime.evaluate', { expression: 'document.body?.innerText ?? ""', returnByValue: true });
           text = typeof r.result.value === 'string' ? r.result.value : '';
         } catch {
           // The notice page is still being put in place; ask again.
         }
-        if (!text) await sleep(100);
+        if (!text || text.startsWith('Starting')) await sleep(100);
       }
       check('the notice says the service cannot be reached and that it will retry', [text.includes('Cannot reach'), /Trying again in \d+ seconds/.test(text)], [true, true]);
       cdp.close();
