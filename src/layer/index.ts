@@ -37,6 +37,8 @@ export interface Layer {
   dispatch: (a: Action) => void;
   /** Show a short message from the shell, for example that a navigation was refused. */
   notice: (text: string) => void;
+  /** The app's window stopped being the one in front: pause what is playing. */
+  away: () => void;
   stop: () => void;
 }
 
@@ -502,7 +504,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     // A key the layer asked the shell to press: it belongs to the site.
     if (e.isTrusted && injected.consume(e.key, Date.now())) return;
     // A real keyboard is in use: typing a character puts the on-screen one away.
-    if (oskOpen && e.isTrusted && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    // Not Space: on some remotes that is the OK button, and it must press the highlighted key.
+    if (oskOpen && e.isTrusted && e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.altKey && !e.metaKey) {
       closeOsk();
       return;
     }
@@ -543,6 +546,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
 
   // Tell the shell when video is playing so it can hold off the screensaver.
   let lastPlaying = false;
+  let lastAwayAt = 0;
   const playbackTimer = view.setInterval(() => {
     const v = findMainVideo(doc, playerRoots);
     const playing = !!v && !v.paused && !v.ended;
@@ -572,6 +576,18 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   return {
     dispatch,
     notice: (text) => overlay.toast(text, 6000),
+    away: () => {
+      // The window is no longer in front. Pause through the site's own key,
+      // and only if something is playing: the key is a toggle.
+      // The shell may say it more than once for one departure (focus lost,
+      // then minimised); a second key would start playback again.
+      if (Date.now() - lastAwayAt < 3000) return;
+      const v = findMainVideo(doc, playerRoots);
+      if (v && inPlayer() && !v.paused && !v.ended) {
+        lastAwayAt = Date.now();
+        pressKey('playPause');
+      }
+    },
     stop: () => {
       view.removeEventListener('keydown', onKey, true);
       doc.removeEventListener('focusin', onFocusIn, true);

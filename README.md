@@ -45,7 +45,7 @@ the app does not read, store or log it.
 | Action | Gamepad | Keyboard / remote |
 |---|---|---|
 | Move | D-pad, left stick | Arrows |
-| Select | A | Enter |
+| Select | A | Enter, Space, or a remote's OK |
 | Back | B | Backspace, Esc |
 | Play/pause | X (A in the player) | Space |
 | Skip back or forward | LB / RB (left/right in the player) | Left / Right in the player |
@@ -54,6 +54,11 @@ the app does not read, store or log it.
 | About and key help | Right stick click | Ctrl+O |
 | Quit | | Ctrl+Q |
 | Save a page outline for bug reports | | Ctrl+Shift+D |
+
+When another app comes to the front, playback is paused and the app goes
+silent; in fullscreen its window is also minimised, which stops the site's
+previews. Launching the app again brings it back. Playback stays paused
+until you press play.
 
 ## Installing
 

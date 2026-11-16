@@ -193,6 +193,44 @@ function createWindow(ready: Promise<void>): BrowserWindow {
     void wc.insertCSS(tvCss, { cssOrigin: 'user' });
   });
 
+  // A TV shows one thing at a time. When another app comes in front:
+  //  - what is playing is paused, by the layer, with the site's own key;
+  //  - the app is silenced, so a preview cannot carry on talking unseen;
+  //  - a fullscreen window is minimised. The page is then hidden, and the
+  //    site stops its own previews (seen on the live site). Launching the
+  //    app again brings the window back (see 'second-instance').
+  // Sound returns with the window; playback waits for the user.
+  let awayAt = 0;
+  let awayTimer: NodeJS.Timeout | undefined;
+  const away = (): void => {
+    if (wc.isDestroyed()) return;
+    wc.send('tropic:away');
+    wc.setAudioMuted(true);
+    awayAt = Date.now();
+    clearTimeout(awayTimer);
+    // A moment later, and only if focus is still gone: the pause key must
+    // land first, and a focus loss that lasts an instant is not leaving.
+    awayTimer = setTimeout(() => {
+      if (!win.isDestroyed() && win.isFullScreen() && !win.isFocused() && !win.isMinimized()) win.minimize();
+    }, 700);
+  };
+  const returned = (): void => {
+    clearTimeout(awayTimer);
+    awayAt = 0;
+    if (!wc.isDestroyed()) wc.setAudioMuted(false);
+  };
+  win.on('blur', away);
+  win.on('minimize', away);
+  win.on('hide', away);
+  win.on('focus', returned);
+  win.on('restore', returned);
+  win.on('show', returned);
+  // If the desktop never says the window has focus again, a key press in it
+  // still proves someone is here. (Not the layer's own pause key, just sent.)
+  wc.on('before-input-event', (_event, input) => {
+    if (awayAt !== 0 && input.type === 'keyDown' && Date.now() - awayAt > 1500) returned();
+  });
+
   // The window is up at once with a notice; the site loads when the playback
   // component is ready, so protected playback works on the first page.
   void wc.loadURL(startingPageUrl());

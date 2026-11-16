@@ -28,6 +28,13 @@ describe('keyToAction', () => {
     expect(keyToAction({ key: 'MediaPlayPause' }, 'browse')).toEqual({ type: 'playPause' });
   });
 
+  it('takes whatever a remote sends for OK: select while browsing, play or pause on the picture', () => {
+    for (const key of ['Enter', ' ', 'Select', 'Accept']) {
+      expect(keyToAction({ key }, 'browse'), key).toEqual({ type: 'select' });
+      expect(keyToAction({ key }, 'player'), key).toEqual({ type: 'playPause' });
+    }
+  });
+
   it('leaves typing alone in text mode', () => {
     expect(keyToAction({ key: 'a' }, 'text')).toBeNull();
     expect(keyToAction({ key: ' ' }, 'text')).toBeNull();

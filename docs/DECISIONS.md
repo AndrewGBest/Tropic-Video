@@ -386,3 +386,19 @@ checks every one is on some face of the keyboard.
 **Not covered:** anything outside ASCII (accented letters, £, €, other
 scripts). A password or address containing those needs a real keyboard.
 **Reopen if:** a user reports a character they cannot type.
+
+## 2026-11-16: Leaving the app pauses, mutes and (in fullscreen) minimises
+
+**Decision (Andrew's request):** nothing keeps playing when the app is not
+the one in front.
+**How, within Hard rule 4:** the layer never calls `pause()`. The playing
+video is paused with the site's own play/pause key, sent only if it is
+playing (the key is a toggle). Previews cannot be paused by a key, so the
+window is muted, and in fullscreen it is minimised: the page is then hidden
+and the site stops its own previews (seen on the live site).
+**Risks accepted:** a window that loses focus for any reason (a system
+dialog) is minimised; launching the app again restores it. If the desktop
+never reports focus returning, the first key press in the window unmutes.
+**Reopen if:** the minimise misfires on some desktop (make it a config
+option), or the site stops pausing on Space.
+

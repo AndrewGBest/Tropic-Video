@@ -67,9 +67,14 @@ export function keyToAction(e: KeyLike, mode: Mode, overrides: Readonly<Record<s
       return mode === 'player' ? { type: 'seek', seconds: -SEEK_STEP } : { type: 'move', dir: 'left' };
     case 'ArrowRight':
       return mode === 'player' ? { type: 'seek', seconds: SEEK_STEP } : { type: 'move', dir: 'right' };
+    // A remote's OK button. Remotes differ in what it sends: Enter on most,
+    // Space on some, and a few send the dedicated Select or Accept key. All of
+    // them select while browsing and play or pause on the picture.
     case 'Enter':
-      return mode === 'player' ? { type: 'playPause' } : { type: 'select' };
     case ' ':
+    case 'Select':
+    case 'Accept':
+      return mode === 'player' ? { type: 'playPause' } : { type: 'select' };
     case 'MediaPlayPause':
     case 'MediaPlay':
     case 'MediaPause':

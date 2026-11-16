@@ -10,6 +10,16 @@ which the agent then published as a pre-release at his request. The
 packaged build of exactly this commit was **not run by anyone before
 release**; the build Andrew tried was one commit of documentation earlier.
 
+## 2026-11-16: OK-button keys, and stopping when the app is left
+
+Andrew: the Flatpak does launch from the desktop (only Discover's Launch
+button did nothing; not looked into further). Two new reports:
+
+| Report | Fix | Checked |
+|---|---|---|
+| Some remotes' OK button sends Space, not Enter, and could not select | Enter, Space, Select and Accept all select while browsing (and on the on-screen keyboard) and play or pause on the picture | Unit tests. **No such remote here**: not checked with one |
+| Video and previews must not carry on when the app is left | On losing focus: the playing video is paused with the site's own key, the app is muted, and a fullscreen window is minimised 0.7 s later if focus is still gone | Live site in the VM, by raising the window's events from the main process: a playing episode paused and muted on blur; a key press unmuted; on minimise the page became hidden, the episode paused and the site removed its home-page preview by itself; restore unmuted and left it paused. **Not checked:** a real switch to another app, and the automatic minimise (the VM's compositor would not blur the window on request) |
+
 ## 2026-11-16: Flatpak from v0.1.0 "does nothing" on Andrew's box (open)
 
 Andrew installed the v0.1.0 Flatpak through Discover and Launch showed
