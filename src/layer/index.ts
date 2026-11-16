@@ -11,7 +11,7 @@ import { aboutTitle, HELP, NOTICE } from '../shared/about';
 import { isSecretField, OskModel } from '../shared/osk';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
 import { findMainVideo, isPlayerActive, playerScope } from './player';
-import { edgeControl, isVisible, openDialog, SpatialNavigator } from './spatial/navigator';
+import { coveredByScreen, edgeControl, isVisible, openDialog, SpatialNavigator } from './spatial/navigator';
 import { HOST_TAG, Overlay } from './ui/overlay';
 import { installSpikeProbes } from './spike';
 
@@ -289,6 +289,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
 
   let refocusTimer: number | undefined;
   let followTimer: number | undefined;
+  let coverTimer: number | undefined;
   let lastCloseAt = 0;
   let backStreak = 0;
   const back = (): void => {
@@ -385,6 +386,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     // overrides it (Back right after Enter must not have focus put back).
     view.clearTimeout(refocusTimer);
     view.clearTimeout(followTimer);
+    view.clearInterval(coverTimer);
     if (aboutOpen) {
       // The panel only needs closing; every other key waits until it is gone.
       if (a.type === 'back' || a.type === 'select' || a.type === 'settings') {
@@ -440,6 +442,18 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
           hoverIfStillCollapsed(target);
           // Some controls scroll the page to another section (tabs that are
           // really jump links). Focus follows to what is now on screen.
+          // What was selected may open something over the whole screen (the
+          // player, while its video is still loading). The ring goes as soon
+          // as that is in front, not when the video finally starts.
+          let looks = 0;
+          view.clearInterval(coverTimer);
+          coverTimer = view.setInterval(() => {
+            if (++looks > 60 || nav.focused !== target || openDialog(doc)) view.clearInterval(coverTimer);
+            else if (coveredByScreen(target, view)) {
+              view.clearInterval(coverTimer);
+              nav.clear();
+            }
+          }, 150);
           view.clearTimeout(followTimer);
           followTimer = view.setTimeout(() => {
             if (enterDialog()) return;
@@ -567,6 +581,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       view.clearInterval(controlsTimer);
       view.clearInterval(keepAlive);
       view.clearTimeout(refocusTimer);
+      view.clearInterval(coverTimer);
       view.clearTimeout(dialogTimer);
       view.clearTimeout(hoverTimer);
       view.clearTimeout(edgeTimer);

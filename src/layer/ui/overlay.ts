@@ -6,9 +6,12 @@ import type { OskKey } from '../../shared/osk';
 export const HOST_TAG = 'tropic-overlay';
 
 const CSS = `
-:host { all: initial; position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; }
+:host {
+  all: initial; position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible;
+  pointer-events: none; z-index: 2147483647;
+}
 .ring {
-  position: fixed; box-sizing: border-box; border: 4px solid #fff; border-radius: 10px;
+  position: absolute; box-sizing: border-box; border: 4px solid #fff; border-radius: 10px;
   box-shadow: 0 0 0 3px rgba(0,0,0,.85), 0 0 24px 4px rgba(255,255,255,.35);
   display: none;
 }
@@ -125,8 +128,12 @@ export class Overlay {
       const r = t.getBoundingClientRect();
       const pad = 6;
       this.ring.style.display = 'block';
-      this.ring.style.left = `${r.left - pad}px`;
-      this.ring.style.top = `${r.top - pad}px`;
+      // In page coordinates: the host sits at the page's origin and scrolls
+      // with it, so while the page scrolls the browser moves the ring with
+      // its target in the same frame. Placed by script alone it trailed a
+      // frame behind and seemed to bounce.
+      this.ring.style.left = `${r.left + view.scrollX - pad}px`;
+      this.ring.style.top = `${r.top + view.scrollY - pad}px`;
       this.ring.style.width = `${r.width + pad * 2}px`;
       this.ring.style.height = `${r.height + pad * 2}px`;
       this.raf = view.requestAnimationFrame(step);

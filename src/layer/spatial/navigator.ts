@@ -198,6 +198,22 @@ function toRect(el: Element): Rect {
   return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
 }
 
+/**
+ * True when something the size of the screen has come up in front of `el`
+ * (a player opening over the page, say): what the user selected is no longer
+ * what they are looking at.
+ */
+export function coveredByScreen(el: Element, view: Window): boolean {
+  const r = el.getBoundingClientRect();
+  const top = el.ownerDocument.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+  if (!top || el.contains(top)) return false;
+  for (let c: Element | null = top; c && !c.contains(el); c = c.parentElement) {
+    const b = c.getBoundingClientRect();
+    if (b.width >= view.innerWidth * 0.9 && b.height >= view.innerHeight * 0.9) return true;
+  }
+  return false;
+}
+
 const FOOTER = 'footer, [role="contentinfo"]';
 
 /** Moves closer together than this are a held key (or a very quick thumb). */

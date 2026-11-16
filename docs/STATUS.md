@@ -23,6 +23,15 @@ Second round of reports the same day:
 | Fast scrolling "bugs out" or jumps to the top | Far down a long page one move took about 0.3 s (every control on the page was examined), so held presses queued and each restarted a smooth scroll; the selection ran through the loaded rows into the footer, and when a row was re-rendered focus restarted from the top bar | Moves look near the screen first; a held key scrolls instantly, stops at the last loaded row instead of entering the footer, and lost focus resumes from what is on screen | Live site in the VM, 200 Down then 120 Up at 40 ms: focus stays centred, waits while rows load, carries on, and stops at the top. A key held on a real remote on the TV box is **not checked** |
 | The ring bounces while the page scrolls | The ring eased toward its target while the target was itself moving | The ring has no easing; it is placed on its target every frame | By reading the code; not judged by eye |
 
+Third round, same day:
+
+| Report | Cause | Fix | Checked |
+|---|---|---|---|
+| The ring still bounces while the page scrolls | It was placed on screen by script each frame, a frame behind the browser's own scrolling | The ring is placed in page coordinates and scrolls with the page | Live site in the VM: aligned after scrolling and in fullscreen. Smoothness **not judged by eye** |
+| The ring stays after a selection until the video loads | Focus was only dropped once playback began | After Enter, the ring goes as soon as something screen-sized is in front of what was selected | Live station in the VM: gone 0.8 s after Enter, before the video had data |
+| Live TV is slow to start | **Not reproduced.** In the VM the same station played 1.6 to 2.0 s after Enter (two tries). The app does nothing during loading and changes none of the site's requests | None | So the delay on the TV box is the box, its network or the service; which is unknown |
+| No @ on the keyboard; symbols for emails and passwords | Search-only layout | Capitals and a symbols face with every printable ASCII character; `@ . - _` on the letters face; Hard rule 9 changed (see DECISIONS) | Fixture end-to-end. Real sign-in pages **not checked** |
+
 Seen on the way, not fixed: a title page with a background trailer starts
 with no focus and the first Down goes to the top bar, not the play button; a
 station's pop-up puts first focus on its close button, not "Watch Live".

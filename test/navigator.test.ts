@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { edgeControl, FOCUS_ATTR, openDialog, SpatialNavigator, ZOOM_ATTR } from '../src/layer/spatial/navigator';
+import { coveredByScreen, edgeControl, FOCUS_ATTR, openDialog, SpatialNavigator, ZOOM_ATTR } from '../src/layer/spatial/navigator';
 
 // jsdom has no layout engine, so each element's rectangle is read from data-rect="left,top,width,height".
 function installLayout(): void {
@@ -496,5 +496,26 @@ describe('a held key on a page that loads more as it scrolls', () => {
     nav.move('down');
     expect(nav.focused?.id).toBe('fresh');
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+  });
+});
+
+describe('coveredByScreen', () => {
+  const setup = (topId: string): Element => {
+    document.body.innerHTML = `
+      <div id="page" data-rect="0,0,1024,3000"><a href="#" id="play" data-rect="30,360,400,60"><span id="label" data-rect="60,370,100,20">x</span></a>
+        <div id="badge" data-rect="30,360,60,20">new</div></div>
+      <div id="player" data-rect="0,0,1024,768"><div id="spinner" data-rect="480,350,60,60">o</div></div>`;
+    document.elementFromPoint = () => document.getElementById(topId);
+    return document.getElementById('play')!;
+  };
+
+  it('is false while the control itself, or a small thing on it, is in front', () => {
+    expect(coveredByScreen(setup('label'), window)).toBe(false);
+    expect(coveredByScreen(setup('badge'), window)).toBe(false);
+  });
+
+  it('is true once something screen-sized is in front, or a part of it', () => {
+    expect(coveredByScreen(setup('player'), window)).toBe(true);
+    expect(coveredByScreen(setup('spinner'), window)).toBe(true);
   });
 });
