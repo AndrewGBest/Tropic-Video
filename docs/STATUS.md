@@ -2,6 +2,16 @@
 
 Update this at the end of every working session.
 
+## 2026-11-17: README wording on quality and on how the app is made
+
+Andrew reports he has been getting HD playback. **Not measured by the agent**:
+no player statistics or resolution reading were taken, and the service's
+published requirements still list standard definition for Linux. The README
+now says both and no longer states SD as a fact. Nothing in the app changed;
+the user agent is still the embedded Chromium's own with the app tokens
+removed. The README also gained a "How it is made" section disclosing that the
+code is written with Claude Code. Checked: `npm run check`.
+
 ## 2026-11-16: first release, v0.1.0
 
 Andrew asked for the first release after trying the builds on his TV box.

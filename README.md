@@ -36,8 +36,10 @@ the app does not read, store or log it.
 - Not the service's own TV app. Its layout follows familiar TV conventions,
   including that app's, but it contains none of the service's artwork, logos,
   fonts or code.
-- Not a way to get higher quality than a Linux browser gets. The service limits
-  Linux computers to standard definition.
+- Not a way to get higher quality than a Linux browser gets. The service
+  decides the quality. Its published requirements list standard definition
+  for Linux computers; the owner reports HD on his own box, which has not been
+  measured. Either way the app does nothing to change it.
 - Not an ad blocker, downloader or region unlocker, and it never will be.
 
 ## Controls
@@ -139,6 +141,13 @@ devices and apps it supports and may change that at any time.
 No telemetry, no analytics, no crash upload. The app talks only to the
 service. The page-outline file made by Ctrl+Shift+D stays on your disk and
 contains page structure only (no titles, names, links or text).
+
+## How it is made
+
+The code is written with Claude Code, an AI coding agent, directed and tested
+by the owner, who is responsible for what is released. The working rules the
+agent follows are in [CLAUDE.md](CLAUDE.md), and
+[docs/STATUS.md](docs/STATUS.md) records what was actually checked and how.
 
 ## Contributing
 
