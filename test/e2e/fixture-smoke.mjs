@@ -314,7 +314,7 @@ try {
       );
       cdp.close();
     }
-    check('the blocked start page is logged', /blocked navigation \(automation-spend\): 127\.0\.0\.1:\d+\/offers\/landing\n/.test(log2), true);
+    check('the blocked start page is logged', /blocked navigation \(automation-spend\): http:\/\/127\.0\.0\.1:\d+\/offers\/landing\n/.test(log2), true);
     if (failures) appLog += `\n--- second launch ---\n${log2}`;
   } catch (err) {
     failures += 1;

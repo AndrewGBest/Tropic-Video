@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { BridgeMessage, LayerOptions, SpikeEvent } from '../shared/actions';
 import { parseConfig, type UserConfig } from '../shared/config';
+import { chooseAdapter } from '../layer/adapter/adapter';
 import { typableText } from '../shared/osk';
 import { playerKeyInfo } from '../shared/player-keys';
 import { browserUserAgent, isAllowedUrl } from './hosts';
@@ -17,8 +18,7 @@ import {
   noticePageUrl,
   offlinePageUrl,
   startingPageUrl,
-  retryDelaySeconds,
-} from './navigation';
+  retryDelaySeconds, httpsUpgrade } from './navigation';
 
 const HOME_URL = 'https://www.primevideo.com/';
 const argv = process.argv.slice(1);
@@ -70,13 +70,26 @@ function loadConfig(): UserConfig {
   return config;
 }
 let userConfig: UserConfig = { keys: {} };
+let siteAdapter: unknown = null;
 
+/**
+ * The site adapter: the one in the package, unless the user has put a newer
+ * `adapter.json` for the same site in the data folder (see chooseAdapter).
+ * Nothing is fetched; the file gets there by the user's own hand.
+ */
 function loadAdapter(): unknown {
-  try {
-    return JSON.parse(readFileSync(join(app.getAppPath(), 'adapters', 'primevideo.json'), 'utf8'));
-  } catch {
-    return null;
-  }
+  const read = (file: string): unknown => {
+    try {
+      return JSON.parse(readFileSync(file, 'utf8'));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') console.error(`[tropic-video] ${file} could not be read: ${String(err).slice(0, 200)}`);
+      return null;
+    }
+  };
+  const choice = chooseAdapter(read(join(app.getAppPath(), 'adapters', 'primevideo.json')), read(join(app.getPath('userData'), 'adapter.json')));
+  if (choice.note) console.error(`[tropic-video] ${choice.note}`);
+  if (choice.source === 'user') console.log('[tropic-video] using adapter.json from the data folder');
+  return choice.raw;
 }
 
 function startUrl(): string {
@@ -87,7 +100,7 @@ function startUrl(): string {
 
 function createWindow(ready: Promise<void>): BrowserWindow {
   const boot = encodeURIComponent(
-    JSON.stringify({ options: { ...options, version: app.getVersion(), keys: userConfig.keys, buttons: userConfig.buttons ?? {} }, adapter: loadAdapter() }),
+    JSON.stringify({ options: { ...options, version: app.getVersion(), keys: userConfig.keys, buttons: userConfig.buttons ?? {} }, adapter: siteAdapter }),
   );
   const win = new BrowserWindow({
     width: 1280,
@@ -148,13 +161,25 @@ function createWindow(ready: Promise<void>): BrowserWindow {
     if (!url.startsWith('data:') && url !== 'about:blank') pageShown = true;
   });
 
+  let lastNoticeAt = 0;
+  const NOTICE_GAP_MS = 5000;
   /** Returns true when `url` may load. A refusal is always logged and shown, never silent. */
   const allowed = (url: string): boolean => {
     const reason = blockReason(url, options);
     if (!reason) return true;
+    // Plain http on an allowed host: load the https page instead (see httpsUpgrade).
+    const upgraded = httpsUpgrade(url, options);
+    if (upgraded) {
+      setImmediate(() => {
+        if (!wc.isDestroyed()) void wc.loadURL(upgraded);
+      });
+      return false;
+    }
     console.error(`[tropic-video] blocked navigation (${reason}): ${describeBlockedUrl(url)}`);
     if (pageShown) {
-      wc.send('tropic:notice', blockedMessage(reason));
+      // Said once, not for every try: a page that keeps asking would keep the message up.
+      if (Date.now() - lastNoticeAt > NOTICE_GAP_MS) wc.send('tropic:notice', blockedMessage(reason));
+      lastNoticeAt = Date.now();
     } else {
       // Deferred so the refused navigation is fully cancelled first.
       setImmediate(() => {
@@ -167,7 +192,12 @@ function createWindow(ready: Promise<void>): BrowserWindow {
   wc.on('will-navigate', (e, url) => {
     if (!allowed(url)) e.preventDefault();
   });
-  wc.on('will-redirect', (e, url) => {
+  // The allowlist is about where the window goes. Frames inside the page are
+  // the site's own business (Hard rule 4): refusing their redirects cancelled
+  // the site's measurement frames and put a "blocked" message on screen for
+  // something nobody had pressed (seen on Steamboat's service, 2026-11-17).
+  wc.on('will-redirect', (e, url, _isInPlace, isMainFrame) => {
+    if (!isMainFrame) return;
     if (!allowed(url)) e.preventDefault();
   });
   // No pop-ups: an allowed link opens in the one window, anything else is dropped.
@@ -334,7 +364,23 @@ async function main(): Promise<void> {
     return;
   }
 
+  // Before the browser starts: its switches cannot be changed afterwards.
+  userConfig = loadConfig();
+  if (userConfig.hardwareDecode) {
+    // Chromium's own switches for decoding video on the graphics chip on
+    // Linux, which it does not promise to support. Off unless asked for.
+    app.commandLine.appendSwitch('enable-features', 'AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL');
+  }
+
   await app.whenReady();
+  // Said once in the terminal, so "is the graphics chip decoding?" has an answer.
+  void app
+    .getGPUInfo('basic')
+    .then(() => {
+      const status = app.getGPUFeatureStatus() as unknown as Record<string, string>;
+      console.log(`[tropic-video] video decode: ${status['video_decode'] ?? 'unknown'}${userConfig.hardwareDecode ? ' (hardwareDecode is on)' : ''}`);
+    })
+    .catch(() => undefined);
   app.userAgentFallback = browserUserAgent(app.userAgentFallback);
 
   // Grant only what playback needs; refuse camera, microphone, location, notifications and the rest.
@@ -343,7 +389,7 @@ async function main(): Promise<void> {
     callback(GRANTED.has(permission));
   });
 
-  userConfig = loadConfig();
+  siteAdapter = loadAdapter();
   wireMessages();
 
   // The window opens before the component is ready, never after: on a first

@@ -3,6 +3,7 @@ import {
   blockReason,
   blockedMessage,
   describeBlockedUrl,
+  httpsUpgrade,
   isLoadFailure,
   noticePageUrl,
   offlinePageUrl,
@@ -36,11 +37,34 @@ describe('blockReason', () => {
   });
 });
 
+describe('httpsUpgrade', () => {
+  it('gives the https form of an http address on the service', () => {
+    expect(httpsUpgrade('http://www.primevideo.com/home?x=1', live)).toBe('https://www.primevideo.com/home?x=1');
+  });
+  it('does nothing for other sites, https addresses, credentials or nonsense', () => {
+    expect(httpsUpgrade('http://example.com/home', live)).toBeNull();
+    expect(httpsUpgrade('https://www.primevideo.com/home', live)).toBeNull();
+    expect(httpsUpgrade('http://user:pw@www.primevideo.com/home', live)).toBeNull();
+    expect(httpsUpgrade('not a url', live)).toBeNull();
+  });
+  it('does not upgrade into a page automation refuses', () => {
+    expect(httpsUpgrade('http://www.primevideo.com/offers/landing', auto)).toBeNull();
+    expect(httpsUpgrade('http://www.primevideo.com/offers/landing', live)).not.toBeNull();
+  });
+  it('leaves local fixtures in dev alone', () => {
+    expect(httpsUpgrade('http://127.0.0.1:8080/x', { dev: true, automation: false })).toBeNull();
+  });
+});
+
 describe('describeBlockedUrl', () => {
   it('keeps host and path, drops query, fragment and credentials', () => {
     expect(describeBlockedUrl('https://user:pw@www.example.com/offers/landing?token=SECRET#frag')).toBe(
       'www.example.com/offers/landing',
     );
+  });
+
+  it('shows the scheme when it is not https, since that may be the reason', () => {
+    expect(describeBlockedUrl('http://www.example.com/home?x=1')).toBe('http://www.example.com/home');
   });
 
   it('truncates long paths', () => {
