@@ -2,16 +2,17 @@
 // it shares the DOM with the site but not its JavaScript, so the site cannot
 // tamper with it and it does not modify the site's own scripts.
 import type { Action, BridgeMessage, Direction, LayerOptions } from '../shared/actions';
-import { firstMatch, type SiteAdapter } from './adapter/adapter';
+import { adapterReport, firstMatch, type SiteAdapter } from './adapter/adapter';
 import { buildOutline, sanitizeUrl } from './diagnostics/outline';
 import { installPurchaseGuard } from './guard/purchase-guard';
 import { startPolling } from './input/gamepad';
 import { keyToAction, type Mode } from './input/keys';
 import { aboutTitle, HELP, NOTICE } from '../shared/about';
-import { isSecretField, OskModel } from '../shared/osk';
+import { isSecretField, oskDock, OskModel } from '../shared/osk';
+import { deepActiveElement, deepContains } from './spatial/deep';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo, type PlayerKey } from '../shared/player-keys';
-import { findMainVideo, isPlayerActive, playerScope } from './player';
-import { coveredByScreen, edgeControl, isVisible, openDialog, SpatialNavigator } from './spatial/navigator';
+import { findMainVideo, isPlayerActive, isSeekBar, playerIsOwnPage, playerScope } from './player';
+import { coveredByScreen, edgeControl, isVisible, MENU_ENTRY, openDialog, SpatialNavigator } from './spatial/navigator';
 import { HOST_TAG, Overlay } from './ui/overlay';
 import { installSpikeProbes } from './spike';
 
@@ -22,6 +23,12 @@ export interface LayerDeps {
   send: (msg: BridgeMessage) => void;
 }
 
+/**
+ * Controls that lead to search when the adapter names none, or names one the
+ * site has since renamed: a link whose address says search. Only a link, so
+ * nothing is pressed whose effect is not written on it.
+ */
+const GENERIC_SEARCH_OPEN = ['a[href$="/search" i]', 'a[href*="/search?" i]'];
 const GENERIC_SEARCH = ['input[type="search"]', '[role="search"] input', 'input[name*="search" i]', 'input[aria-label*="search" i]'];
 
 function isTextEntry(el: Element | null): boolean {
@@ -142,10 +149,16 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     }
     (hit.control as HTMLElement).click();
     view.clearTimeout(edgeTimer);
-    edgeTimer = view.setTimeout(() => {
-      const f = nav.focused;
-      if (!f || !isVisible(f, view)) nav.focusFirstIn(hit.container);
-    }, 700);
+    // Twice: the new slide can still be sliding in at the first look, and
+    // what was picked then may itself be put away when it settles.
+    const settle = (again: boolean): void => {
+      edgeTimer = view.setTimeout(() => {
+        const f = nav.focused;
+        if (!f || !isVisible(f, view)) nav.focusFirstIn(hit.container);
+        if (again) settle(false);
+      }, 700);
+    };
+    settle(true);
   };
 
   /**
@@ -158,7 +171,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     // Outside the player this must answer without touching focus: it is also
     // asked by timers, and clearing here would drop focus on a browse page.
     if (!f || !inPlayer()) return false;
-    if (scope()?.contains(f) && isVisible(f, view)) return true;
+    const within = scope();
+    if (within && deepContains(within, f) && isVisible(f, view)) return true;
     nav.clear();
     return false;
   };
@@ -169,7 +183,8 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   let oskOpen = false;
   let aboutOpen = false;
   let oskSubmit = 'enter';
-  const drawOsk = (): void => overlay.keyboard(oskOpen ? osk.rows : null, { row: osk.row, index: osk.index }, oskSubmit);
+  let oskSide: 'top' | 'bottom' = 'bottom';
+  const drawOsk = (): void => overlay.keyboard(oskOpen ? osk.rows : null, { row: osk.row, index: osk.index }, oskSubmit, oskSide);
   const isSearchField = (el: Element): boolean => {
     try {
       return el.matches([...adapter.selectors.searchInput, ...GENERIC_SEARCH].join(','));
@@ -181,6 +196,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     if (!oskOpen) osk.reset();
     // The key says what it does: it only searches in a search field.
     oskSubmit = isSearchField(field) ? 'search' : 'enter';
+    // Keep the keyboard off the field, so what is typed can be seen.
+    const box = field.getBoundingClientRect();
+    oskSide = oskDock({ top: box.top, bottom: box.bottom }, doc.defaultView?.innerHeight ?? 0);
     oskOpen = true;
     drawOsk();
   };
@@ -210,10 +228,10 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const mode = (): Mode => {
     if (oskOpen) {
       // The keyboard only makes sense while its field still has focus.
-      if (isTextEntry(doc.activeElement)) return 'browse';
+      if (isTextEntry(deepActiveElement(doc))) return 'browse';
       closeOsk();
     }
-    if (isTextEntry(doc.activeElement)) return 'text';
+    if (isTextEntry(deepActiveElement(doc))) return 'text';
     if (!inPlayer()) return 'browse';
     return onPlayerControl() ? 'browse' : 'player';
   };
@@ -239,7 +257,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
     const dialog = openDialog(doc);
     if (!dialog) return false;
     const f = nav.focused;
-    if (!f || !dialog.contains(f)) {
+    if (!f || !deepContains(dialog, f)) {
       beforeDialog = f;
       nav.focusFirstIn(dialog);
     }
@@ -271,12 +289,21 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   const CONTROLS_LINGER_MS = 20_000;
   let lastControlKeyAt = 0;
   const keepAlive = view.setInterval(() => {
+    if (doc.hidden) return;
     if (Date.now() - lastControlKeyAt < CONTROLS_LINGER_MS && onPlayerControl()) revealControls();
   }, 1000);
   const moveInPlayer = (dir: Direction): void => {
     lastControlKeyAt = Date.now();
     revealControls();
     if (onPlayerControl()) {
+      // On the progress bar, left and right are sent to the site as its seek
+      // keys: nothing lies beside a bar that spans the screen. (On Steamboat's
+      // site the focused bar answers them with its own small steps.)
+      const f = nav.focused;
+      if (f && (dir === 'left' || dir === 'right') && isSeekBar(f, view)) {
+        pressPlayerKey(dir === 'left' ? 'seekBack' : 'seekForward');
+        return;
+      }
       if (!nav.move(dir)) overlay.feedback(dir);
       return;
     }
@@ -294,8 +321,12 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   let coverTimer: number | undefined;
   let lastCloseAt = 0;
   let backStreak = 0;
+  /** A menu was seen to open in the player and no Escape has been sent for it yet. */
+  let playerMenuSeen = false;
+  /** The address the user was last browsing at, outside the player. */
+  let browseUrl: string | null = null;
   const back = (): void => {
-    const active = doc.activeElement;
+    const active = deepActiveElement(doc);
     if (isTextEntry(active)) {
       (active as HTMLElement).blur();
       return;
@@ -332,6 +363,17 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
         (close as HTMLElement).click();
         return;
       }
+      // A player that is a page of its own is left like any page, once any
+      // menu it has open is closed with the site's own Escape key.
+      // A menu's entry can open a view with no entries of its own (a slider,
+      // on Steamboat's service), so having seen the menu open counts until one
+      // Escape has been sent for it.
+      const menuOpen = playerMenuSeen || nav.candidates().some((el) => el.matches(MENU_ENTRY));
+      playerMenuSeen = false;
+      if (!menuOpen && playerIsOwnPage(browseUrl, view.location.href) && view.history.length > 1) {
+        view.history.back();
+        return;
+      }
       // Ask the site's player with its own Escape key. With a menu open the
       // first Escape closes the menu and the next one the player, so history
       // is only the last resort: the third Back in a row that leaves the
@@ -347,7 +389,21 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       pressPlayerKey('close');
       return;
     }
-    if (view.history.length > 1) view.history.back();
+    goBack();
+  };
+  // Going back a page. Some pages add a second history entry for themselves
+  // as they load (seen on the title pages of Steamboat's service), and the first step
+  // back then changes nothing the user can see. One more step is taken when
+  // the address has not changed and no other key has come in.
+  let backTimer: number | undefined;
+  const goBack = (): void => {
+    if (view.history.length <= 1) return;
+    const before = view.location.pathname + view.location.search;
+    view.history.back();
+    view.clearTimeout(backTimer);
+    backTimer = view.setTimeout(() => {
+      if (view.location.pathname + view.location.search === before && !inPlayer() && !openDialog(doc)) view.history.back();
+    }, 600);
   };
 
   // Some sites keep the search field hidden until a control is activated.
@@ -370,7 +426,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       nav.focus(input);
       return;
     }
-    const opener = visibleMatch(adapter.selectors.searchOpen);
+    const opener = visibleMatch([...adapter.selectors.searchOpen, ...GENERIC_SEARCH_OPEN]);
     if (!opener) return;
     (opener as HTMLElement).click();
     let tries = 0;
@@ -383,11 +439,16 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
 
   const dispatch = (a: Action): void => {
+    if (!inPlayer()) {
+      browseUrl = view.location.href;
+      playerMenuSeen = false;
+    }
     doc.documentElement.classList.add('tropic-no-pointer');
     // A pending "pick focus up again" belongs to the previous key; a new key
     // overrides it (Back right after Enter must not have focus put back).
     view.clearTimeout(refocusTimer);
     view.clearTimeout(followTimer);
+    view.clearTimeout(backTimer);
     view.clearInterval(coverTimer);
     if (aboutOpen) {
       // The panel only needs closing; every other key waits until it is gone.
@@ -465,9 +526,16 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
         // Activating a player control can replace it (a menu opens, a list
         // changes). Pick focus up again next to where it was.
         if (box && inPlayer()) {
+          const before = new Set(nav.candidates());
           view.clearTimeout(refocusTimer);
           refocusTimer = view.setTimeout(() => {
-            if (inPlayer() && !onPlayerControl()) nav.focusNearest({ x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 });
+            if (!inPlayer()) return;
+            const point = { x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 };
+            // A menu opened: go into it, rather than leave the user to find it.
+            const opened = nav.candidates().filter((el) => !before.has(el) && el.matches(MENU_ENTRY));
+            if (opened.length > 0) playerMenuSeen = true;
+            if (opened.length > 0 && nav.focused === target) nav.focusNearest(point, opened);
+            else if (!onPlayerControl()) nav.focusNearest(point);
           }, 500);
         }
         break;
@@ -485,7 +553,9 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
         openSearch();
         break;
       case 'diagnostics':
-        send({ kind: 'diagnostics', outline: buildOutline(doc.documentElement), url: sanitizeUrl(view.location.href) });
+        // The first line says how much of the adapter still matches this page:
+        // a zero where there used to be matches is the site having changed.
+        send({ kind: 'diagnostics', outline: `# ${adapterReport(adapter, doc)}\n${buildOutline(doc.documentElement)}`, url: sanitizeUrl(view.location.href) });
         overlay.toast('Page outline saved (structure only, no text)');
         break;
       case 'settings':
@@ -533,7 +603,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   };
   const onFocusIn = (e: FocusEvent): void => adoptField(e.target instanceof Element ? e.target : null);
   doc.addEventListener('focusin', onFocusIn, true);
-  adoptField(doc.activeElement);
+  adoptField(deepActiveElement(doc));
 
   const onPointer = (): void => {
     // The shell's own nudge (see revealControls) is not the user reaching for a mouse.
@@ -548,6 +618,15 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
   let lastPlaying = false;
   let lastAwayAt = 0;
   const playbackTimer = view.setInterval(() => {
+    // Minimised or behind another window: nothing to look after. Playback
+    // was paused on the way out, and the shell must hear that it stopped.
+    if (doc.hidden) {
+      if (lastPlaying) {
+        lastPlaying = false;
+        send({ kind: 'playback', playing: false });
+      }
+      return;
+    }
     const v = findMainVideo(doc, playerRoots);
     const playing = !!v && !v.paused && !v.ended;
     // Mark the player so the stylesheet can hide controls the site has disabled.
@@ -601,6 +680,7 @@ export function startLayer({ doc, options, adapter, send }: LayerDeps): Layer {
       view.clearTimeout(dialogTimer);
       view.clearTimeout(hoverTimer);
       view.clearTimeout(edgeTimer);
+      view.clearTimeout(backTimer);
       stopPads();
       stopGuard();
       stopSpike();

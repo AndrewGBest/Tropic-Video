@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSecretField, OSK_COLUMNS, OSK_PAGES, OskModel, typableText } from '../src/shared/osk';
+import { isSecretField, OSK_COLUMNS, OSK_PAGES, oskDock, OskModel, typableText } from '../src/shared/osk';
 
 describe('on-screen keyboard layout', () => {
   const pages = Object.values(OSK_PAGES);
@@ -126,5 +126,25 @@ describe('isSecretField', () => {
     expect(isSecretField('search', 'off')).toBe(false);
     expect(isSecretField(null, null)).toBe(false);
     expect(isSecretField('email', 'username')).toBe(false);
+  });
+});
+
+describe('oskDock', () => {
+  const vh = 540;
+  it('sits at the bottom when the field is in the upper part of the screen', () => {
+    expect(oskDock({ top: 40, bottom: 80 }, vh)).toBe('bottom');
+  });
+  it('moves to the top when it would cover the field', () => {
+    // The email field of the sign-in page of Steamboat's service, as measured in its shell: 334 to 394 of 541.
+    expect(oskDock({ top: 334, bottom: 394 }, vh)).toBe('top');
+    expect(oskDock({ top: 480, bottom: 530 }, vh)).toBe('top');
+  });
+  it('covers as little as it can of a field in the middle', () => {
+    expect(oskDock({ top: 250, bottom: 300 }, vh)).toBe('top');
+    expect(oskDock({ top: 240, bottom: 290 }, vh)).toBe('bottom');
+  });
+  it('stays at the bottom when there is nothing to measure', () => {
+    expect(oskDock({ top: 0, bottom: 0 }, 0)).toBe('bottom');
+    expect(oskDock({ top: 2000, bottom: 2040 }, vh)).toBe('bottom');
   });
 });

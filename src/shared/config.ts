@@ -4,6 +4,7 @@
 //
 //   {
 //     "zoom": 2,
+//     "hardwareDecode": true,
 //     "keys": { "F1": "search", "ContextMenu": "about", "MediaStop": "back", "Ctrl+h": "none" },
 //     "buttons": { "8": "about", "9": "playPause" }
 //   }
@@ -22,6 +23,8 @@ export type ActionName = (typeof ACTION_NAMES)[number];
 export interface UserConfig {
   /** TV scale override; the --zoom option still wins. */
   zoom?: number;
+  /** Ask the browser to decode video on the graphics chip. Off unless set; see the README. */
+  hardwareDecode?: boolean;
   /** Key (as written by the user, "Ctrl+" normalised) to action. */
   keys: Record<string, ActionName>;
   /** Gamepad button number (standard mapping, 0 to 16) to action. */
@@ -53,6 +56,11 @@ export function parseConfig(raw: unknown): { config: UserConfig; problems: strin
     else problems.push('"zoom" must be a positive number');
   }
 
+  if (r['hardwareDecode'] !== undefined) {
+    if (typeof r['hardwareDecode'] === 'boolean') config.hardwareDecode = r['hardwareDecode'];
+    else problems.push('"hardwareDecode" must be true or false');
+  }
+
   if (r['keys'] !== undefined) {
     if (typeof r['keys'] !== 'object' || r['keys'] === null || Array.isArray(r['keys'])) {
       problems.push('"keys" must be an object of key: action');
@@ -82,7 +90,7 @@ export function parseConfig(raw: unknown): { config: UserConfig; problems: strin
     }
   }
   for (const name of Object.keys(r)) {
-    if (name !== 'zoom' && name !== 'keys' && name !== 'buttons') problems.push(`unknown setting "${name.slice(0, 40)}"`);
+    if (name !== 'zoom' && name !== 'keys' && name !== 'buttons' && name !== 'hardwareDecode') problems.push(`unknown setting "${name.slice(0, 40)}"`);
   }
   return { config, problems };
 }

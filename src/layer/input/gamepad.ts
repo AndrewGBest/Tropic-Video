@@ -143,10 +143,19 @@ export function startPolling(
   view.addEventListener('focus', onFocus);
   view.addEventListener('blur', onBlur);
 
+  // The loop runs only while a pad is connected. Without one there is
+  // nothing to read, and a callback every frame for as long as the app is
+  // open is work a small TV box should not be doing.
+  let running = false;
   const tick = (): void => {
     if (stopped) return;
+    const pads = [...view.navigator.getGamepads()].filter((p): p is Gamepad => !!p && p.connected);
+    if (pads.length === 0) {
+      running = false;
+      trackers.clear();
+      return;
+    }
     if (focused) {
-      const pads = [...view.navigator.getGamepads()].filter((p): p is Gamepad => !!p && p.connected);
       const steam = pads.find((p) => STEAM_VIRTUAL_PAD.test(p.id));
       for (const pad of steam ? [steam] : pads) {
         let tracker = trackers.get(pad.index);
@@ -163,10 +172,19 @@ export function startPolling(
     }
     view.requestAnimationFrame(tick);
   };
-  view.requestAnimationFrame(tick);
+  const start = (): void => {
+    if (running || stopped) return;
+    running = true;
+    view.requestAnimationFrame(tick);
+  };
+  // The browser announces a pad when one of its buttons is first pressed.
+  view.addEventListener('gamepadconnected', start);
+  // One may already be known to this page (the layer starts again on every page).
+  start();
 
   return () => {
     stopped = true;
+    view.removeEventListener('gamepadconnected', start);
     view.removeEventListener('focus', onFocus);
     view.removeEventListener('blur', onBlur);
   };

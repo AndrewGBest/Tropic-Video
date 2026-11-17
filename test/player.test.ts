@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { findMainVideo, isPlayerActive, playerScope } from '../src/layer/player';
+import { findMainVideo, isPlayerActive, playerScope, isSeekBar, playerIsOwnPage } from '../src/layer/player';
 import { SpatialNavigator } from '../src/layer/spatial/navigator';
 import { InjectedKeys, isNativePlayerKey, playerKeyFor, playerKeyInfo } from '../src/shared/player-keys';
 
@@ -134,5 +134,37 @@ describe('player scope', () => {
     expect(nav.focused?.id).toBe('mid');
     nav.move('left');
     expect(nav.focused?.id).toBe('left');
+  });
+});
+
+describe('playerIsOwnPage', () => {
+  it('is true when the player has an address of its own', () => {
+    expect(playerIsOwnPage('https://example.com/browse/title-1', 'https://example.com/play/abc')).toBe(true);
+  });
+  it('is false for a player laid over the page it was started from', () => {
+    expect(playerIsOwnPage('https://example.com/detail/1?x=1', 'https://example.com/detail/1?autoplay=1#t')).toBe(false);
+  });
+  it('is false when nothing was browsed first, or an address cannot be read', () => {
+    expect(playerIsOwnPage(null, 'https://example.com/play/abc')).toBe(false);
+    expect(playerIsOwnPage('nonsense', 'https://example.com/play/abc')).toBe(false);
+  });
+});
+
+describe('isSeekBar', () => {
+  const sized = (markup: string, width: number): Element => {
+    document.body.innerHTML = markup;
+    const el = document.body.firstElementChild!;
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, right: width, bottom: 20, width, height: 20, x: 0, y: 0, toJSON: () => ({}) });
+    return el;
+  };
+  it('is a slider that spans most of the screen', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 960, configurable: true });
+    expect(isSeekBar(sized('<div role="slider"></div>', 900), window)).toBe(true);
+    expect(isSeekBar(sized('<input type="range">', 700), window)).toBe(true);
+  });
+  it('is not a volume slider or a wide button', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 960, configurable: true });
+    expect(isSeekBar(sized('<div role="slider"></div>', 80), window)).toBe(false);
+    expect(isSeekBar(sized('<button></button>', 900), window)).toBe(false);
   });
 });

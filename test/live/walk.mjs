@@ -47,14 +47,20 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // Runs in the page. Reports the focused element's tag, role, test id (with
 // anything id-like or personal masked), box and the scroll position.
 const probe = `(() => {
-  const e = document.querySelector('[data-tropic-focus]');
+  // The focused control may be inside open shadow roots (a web-component player).
+  const all = (root, sel) => [...root.querySelectorAll(sel), ...[...root.querySelectorAll('*')].flatMap((h) => (h.shadowRoot ? all(h.shadowRoot, sel) : []))];
+  const e = all(document, '[data-tropic-focus]')[0];
   if (!e) return 'NONE';
   const r = e.getBoundingClientRect();
-  const raw = e.getAttribute('data-testid') || e.getAttribute('data-automation-id') || e.closest('[data-testid]')?.getAttribute('data-testid') || '';
+  const host = e.getRootNode().host;
+  const raw = e.getAttribute('data-testid') || e.getAttribute('data-automation-id') || e.closest('[data-testid]')?.getAttribute('data-testid') || (host ? '<' + host.tagName.toLowerCase() + '>' : '');
   const name = raw.replace(/profile.*/i, 'profile-*').replace(/[0-9A-Z]{8,}/g, ':id').replace(/\\s.*/, '').slice(0, 34);
   const on = r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
   const role = e.getAttribute('role');
+  // Which control it is, by position in the document: cards in a row look alike otherwise.
+  const nth = all(document, 'a, button, [role="button"], input').indexOf(e);
   return [
+    '#' + nth,
     e.tagName.toLowerCase() + (role ? '[' + role + ']' : ''),
     name,
     Math.round(r.left) + ',' + Math.round(r.top),

@@ -51,6 +51,7 @@ const CSS = `
   box-shadow: 0 1vh 6vh rgba(0,0,0,.7);
 }
 .osk.show { display: grid; }
+.osk.top { bottom: auto; top: 4vh; }
 .osk .key {
   height: 7.2vh; border-radius: 1.2vh; background: #2a2f38; color: #f2f2f2;
   font: 600 3.6vh/7.2vh system-ui, sans-serif; text-align: center;
@@ -58,6 +59,11 @@ const CSS = `
 .osk .key.wide { font-size: 3vh; }
 .osk .key.on { background: #fff; color: #111; box-shadow: 0 0 0 .5vh rgba(255,255,255,.35); }
 `;
+
+/** How long the ring is followed frame by frame after it was last seen to move. */
+const FOLLOW_MS = 700;
+/** How often a ring at rest is looked at. */
+const WATCH_MS = 500;
 
 export class Overlay {
   private readonly ring: HTMLElement;
@@ -68,6 +74,9 @@ export class Overlay {
   private target: Element | null = null;
   private toastTimer: number | undefined;
   private raf = 0;
+  private placed = 'none';
+  private followUntil = 0;
+  private watch: number | undefined;
 
   constructor(private readonly doc: Document) {
     const host = doc.createElement(HOST_TAG);
@@ -94,6 +103,10 @@ export class Overlay {
     root.append(this.ring, this.toastEl, this.oskEl, this.aboutEl);
     doc.documentElement.append(host);
     this.host = host;
+    // Anything that scrolls may be carrying the target (a row, a list); the
+    // page's own scrolling needs nothing, since the ring scrolls with it.
+    doc.addEventListener('scroll', (e) => { if (e.target !== doc) this.wake(); }, { capture: true, passive: true });
+    view?.addEventListener('resize', () => this.wake(), { passive: true });
     // When the site puts its player in fullscreen, only that element and the
     // browser's top layer are drawn, so the ring and keyboard would vanish.
     // A manual popover lives in the top layer; showing it again after each
@@ -116,29 +129,66 @@ export class Overlay {
 
   track(el: Element | null): void {
     this.target = el;
+    this.wake();
+  }
+
+  /**
+   * Puts the ring on its target. Returns true when anything had to change.
+   * In page coordinates: the host sits at the page's origin and scrolls with
+   * it, so while the page scrolls the browser moves the ring with its target
+   * in the same frame. Placed by script alone it trailed a frame behind and
+   * seemed to bounce.
+   */
+  private place(): boolean {
     const view = this.doc.defaultView;
-    if (!view) return;
-    view.cancelAnimationFrame(this.raf);
-    const step = (): void => {
-      const t = this.target;
-      if (!t || !t.isConnected) {
-        this.ring.style.display = 'none';
-        return;
-      }
+    const t = this.target;
+    let box = 'none';
+    if (view && t && t.isConnected) {
       const r = t.getBoundingClientRect();
       const pad = 6;
-      this.ring.style.display = 'block';
-      // In page coordinates: the host sits at the page's origin and scrolls
-      // with it, so while the page scrolls the browser moves the ring with
-      // its target in the same frame. Placed by script alone it trailed a
-      // frame behind and seemed to bounce.
-      this.ring.style.left = `${r.left + view.scrollX - pad}px`;
-      this.ring.style.top = `${r.top + view.scrollY - pad}px`;
-      this.ring.style.width = `${r.width + pad * 2}px`;
-      this.ring.style.height = `${r.height + pad * 2}px`;
-      this.raf = view.requestAnimationFrame(step);
+      box = `${r.left + view.scrollX - pad},${r.top + view.scrollY - pad},${r.width + pad * 2},${r.height + pad * 2}`;
+    }
+    if (box === this.placed) return false;
+    this.placed = box;
+    if (box === 'none') {
+      this.ring.style.display = 'none';
+      return true;
+    }
+    const [left, top, width, height] = box.split(',');
+    this.ring.style.display = 'block';
+    this.ring.style.left = `${left}px`;
+    this.ring.style.top = `${top}px`;
+    this.ring.style.width = `${width}px`;
+    this.ring.style.height = `${height}px`;
+    return true;
+  }
+
+  /**
+   * Follows the target frame by frame for a short while, and for as long as
+   * it keeps moving (a row sliding, a card growing). Then it stops: a ring
+   * that sits still must not cost a measurement and a wake-up every frame for
+   * as long as the app is open. A slow look, twice a second, catches a page
+   * that shifts by itself (pictures loading above the target).
+   */
+  private wake(): void {
+    const view = this.doc.defaultView;
+    if (!view) return;
+    this.followUntil = view.performance.now() + FOLLOW_MS;
+    if (this.raf !== 0) return;
+    const step = (): void => {
+      this.raf = 0;
+      if (this.place()) this.followUntil = view.performance.now() + FOLLOW_MS;
+      if (this.target && view.performance.now() < this.followUntil) this.raf = view.requestAnimationFrame(step);
     };
     step();
+    if (this.watch === undefined) {
+      this.watch = view.setInterval(() => {
+        if (!this.target) {
+          view.clearInterval(this.watch);
+          this.watch = undefined;
+        } else if (this.raf === 0 && !this.doc.hidden && this.place()) this.wake();
+      }, WATCH_MS);
+    }
   }
 
   /** Shows the About and help panel; `null` hides it. */
@@ -173,7 +223,12 @@ export class Overlay {
   }
 
   /** Draws the on-screen keyboard with one key highlighted; `null` hides it. */
-  keyboard(rows: readonly (readonly OskKey[])[] | null, active?: { row: number; index: number }, submitLabel?: string): void {
+  keyboard(
+    rows: readonly (readonly OskKey[])[] | null,
+    active?: { row: number; index: number },
+    submitLabel?: string,
+    dock: 'top' | 'bottom' = 'bottom',
+  ): void {
     if (!rows) {
       this.oskEl.classList.remove('show');
       return;
@@ -189,6 +244,7 @@ export class Overlay {
       }),
     );
     this.oskEl.replaceChildren(...keys);
+    this.oskEl.classList.toggle('top', dock === 'top');
     this.oskEl.classList.add('show');
   }
 

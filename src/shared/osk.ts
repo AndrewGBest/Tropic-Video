@@ -146,3 +146,27 @@ export function isSecretField(type: string | null, autocomplete: string | null):
   if ((type ?? '').toLowerCase() === 'password') return true;
   return /password|one-time-code/i.test(autocomplete ?? '');
 }
+
+/**
+ * The share of the screen's height the keyboard takes, margin included: five
+ * rows of 7.2vh keys, four 1vh gaps, 2.2vh padding twice, 4vh from the edge
+ * (the overlay's stylesheet). Keep the two in step.
+ */
+export const OSK_HEIGHT = 0.484;
+
+/**
+ * Which edge of the screen the keyboard sits at so that it does not cover the
+ * field being typed into: the bottom, unless it would cover more of the field
+ * there than at the top. On the sign-in page of Steamboat's service the field is in the
+ * lower half and a keyboard at the bottom hid it completely.
+ */
+export function oskDock(field: { top: number; bottom: number }, viewportHeight: number): 'top' | 'bottom' {
+  if (!(viewportHeight > 0)) return 'bottom';
+  // A field that is off screen is covered by neither.
+  const top = Math.max(0, Math.min(viewportHeight, field.top));
+  const bottom = Math.max(0, Math.min(viewportHeight, field.bottom));
+  const band = OSK_HEIGHT * viewportHeight;
+  const coveredAtBottom = Math.max(0, bottom - Math.max(top, viewportHeight - band));
+  const coveredAtTop = Math.max(0, Math.min(bottom, band) - top);
+  return coveredAtBottom > coveredAtTop ? 'top' : 'bottom';
+}

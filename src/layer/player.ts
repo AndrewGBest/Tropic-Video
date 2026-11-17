@@ -84,3 +84,27 @@ export function playerScope(video: HTMLVideoElement, playerRoots: readonly strin
   }
   return scope;
 }
+
+/**
+ * True when the site's player is a page of its own: the address now is not
+ * the address the user was browsing at when they started it. Such a player is
+ * left the way any page is, by going back. (Seen on Steamboat's service: the player
+ * lives at its own path and ignores Escape.) A player laid over the page it
+ * was started from has the same address and is closed with the site's key.
+ */
+export function playerIsOwnPage(browseUrl: string | null, currentUrl: string): boolean {
+  if (!browseUrl) return false;
+  try {
+    const a = new URL(browseUrl);
+    const b = new URL(currentUrl);
+    return a.origin !== b.origin || a.pathname !== b.pathname;
+  } catch {
+    return false;
+  }
+}
+
+/** A slider at least half as wide as the screen: the player's progress bar, not a volume control. */
+export function isSeekBar(el: Element, view: Window): boolean {
+  const slider = el.getAttribute('role') === 'slider' || (el instanceof HTMLInputElement && el.type === 'range');
+  return slider && el.getBoundingClientRect().width >= view.innerWidth / 2;
+}

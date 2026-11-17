@@ -98,4 +98,11 @@ describe('gamepad button overrides', () => {
     expect(buttonToAction(Btn.X, 'browse', buttons)).toBeNull();
     expect(buttonToAction(Btn.A, 'browse', buttons)).toEqual({ type: 'select' });
   });
+
+  it('reads hardwareDecode as a plain switch', () => {
+    expect(parseConfig({ hardwareDecode: true }).config.hardwareDecode).toBe(true);
+    const bad = parseConfig({ hardwareDecode: 'yes' });
+    expect(bad.config.hardwareDecode).toBeUndefined();
+    expect(bad.problems.join()).toMatch(/hardwareDecode/);
+  });
 });

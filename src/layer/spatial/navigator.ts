@@ -1,5 +1,6 @@
 // DOM side of directional focus: finds candidates, moves focus, activates.
 import type { Direction } from '../../shared/actions';
+import { composedParent, deepClosest, deepContains, deepQueryAll } from './deep';
 import { pickInitial, pickNext, type Rect } from './geometry';
 
 const FOCUSABLE = [
@@ -70,7 +71,14 @@ export interface NavigatorOptions {
   scope?: () => Element | null;
 }
 
-export function isVisible(el: Element, view: Window): boolean {
+/**
+ * `faded` remembers, for one pass over many controls, whether each ancestor
+ * is transparent or sits inside something that is: siblings share almost all
+ * of their ancestors, and asking for each one's style again is most of the
+ * cost of a move on a long page. With it the search goes all the way up;
+ * without it, twelve levels.
+ */
+export function isVisible(el: Element, view: Window, faded?: Map<Element, boolean>): boolean {
   const r = el.getBoundingClientRect();
   if (r.width < 4 || r.height < 4) return false;
   const style = view.getComputedStyle(el);
@@ -84,15 +92,28 @@ export function isVisible(el: Element, view: Window): boolean {
     const hitArea = el.matches('a[href], button, [role="button"], [role="link"]');
     if (!hitArea || r.width < 48 || r.height < 48) return false;
   }
-  if (el.closest('[aria-hidden="true"], [inert]')) return false;
+  if (deepClosest(el, '[aria-hidden="true"], [inert]')) return false;
   // Opacity is not inherited in the computed style, but a transparent ancestor
   // hides everything in it. Seen on the live site: the slides of a carousel
   // are stacked in one place and all but one sit in a fully transparent wrapper.
-  let node = el.parentElement;
-  for (let i = 0; node && i < 12; i++, node = node.parentElement) {
-    if (view.getComputedStyle(node).opacity === '0') return false;
+  const walked: Element[] = [];
+  let hidden = false;
+  let node = composedParent(el);
+  for (let i = 0; node && (faded || i < 12); i++, node = composedParent(node)) {
+    const known = faded?.get(node);
+    if (known !== undefined) {
+      hidden = known;
+      break;
+    }
+    walked.push(node);
+    if (view.getComputedStyle(node).opacity === '0') {
+      hidden = true;
+      break;
+    }
   }
-  return true;
+  // Everything walked lies under where the search ended, so it shares the answer.
+  if (faded) for (const n of walked) faded.set(n, hidden);
+  return !hidden;
 }
 
 /**
@@ -127,8 +148,8 @@ export function edgeControl(from: Element, selectors: readonly string[], view: W
 }
 
 export function rowOf(el: Element, view: Window): Element | null {
-  let node = el.parentElement;
-  for (let i = 0; node && i < 8; i++, node = node.parentElement) {
+  let node = composedParent(el);
+  for (let i = 0; node && i < 8; i++, node = composedParent(node)) {
     // A strip, not a page: on the live site a page-sized container also
     // clips sideways, and taking it for a row sent focus to the top of the page.
     if (node.clientHeight > view.innerHeight * 0.9) return null;
@@ -163,7 +184,7 @@ export function openDialog(doc: Document): Element | null {
 export function isPinned(el: Element, view: Window, cache: Map<Element, boolean> = new Map()): boolean {
   const path: Element[] = [];
   let pinned = false;
-  for (let node: Element | null = el; node && node !== el.ownerDocument.body; node = node.parentElement) {
+  for (let node: Element | null = el; node && node !== el.ownerDocument.body; node = composedParent(node)) {
     const known = cache.get(node);
     if (known !== undefined) {
       pinned = known;
@@ -178,6 +199,14 @@ export function isPinned(el: Element, view: Window, cache: Map<Element, boolean>
   }
   for (const node of path) cache.set(node, pinned);
   return pinned;
+}
+
+/** False for an element the page has put away: no box, or not displayed. */
+function isLaidOut(el: Element, view: Window): boolean {
+  const r = el.getBoundingClientRect();
+  if (r.width === 0 && r.height === 0) return false;
+  const style = view.getComputedStyle(el);
+  return style.display !== 'none' && style.visibility !== 'hidden';
 }
 
 /** False for something parked far outside the page, a common way to hide a real input. */
@@ -206,15 +235,38 @@ function toRect(el: Element): Rect {
 export function coveredByScreen(el: Element, view: Window): boolean {
   const r = el.getBoundingClientRect();
   const top = el.ownerDocument.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2);
-  if (!top || el.contains(top)) return false;
-  for (let c: Element | null = top; c && !c.contains(el); c = c.parentElement) {
+  // For a control inside a shadow root the browser names its outermost host.
+  if (!top || deepContains(el, top) || deepContains(top, el)) return false;
+  for (let c: Element | null = top; c && !deepContains(c, el); c = composedParent(c)) {
     const b = c.getBoundingClientRect();
     if (b.width >= view.innerWidth * 0.9 && b.height >= view.innerHeight * 0.9) return true;
   }
   return false;
 }
 
+/**
+ * Brings `el` into view inside the nearest list that scrolls by itself, when
+ * that list has it out of sight. Only that list moves. Seen on Steamboat's service:
+ * the player's subtitle menu is a list taller than its box, and entries past
+ * the box could be focused but not seen.
+ */
+export function scrollWithinList(el: Element, view: Window): void {
+  const body = el.ownerDocument.body;
+  for (let node = composedParent(el), i = 0; node && node !== body && node !== el.ownerDocument.documentElement && i < 12; node = composedParent(node), i++) {
+    if (node.scrollHeight <= node.clientHeight + 8) continue;
+    const overflow = view.getComputedStyle(node).overflowY;
+    if (overflow !== 'auto' && overflow !== 'scroll') continue;
+    const box = node.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    if (r.top < box.top || r.bottom > box.bottom) node.scrollTop += (r.top + r.bottom) / 2 - (box.top + box.bottom) / 2;
+    return;
+  }
+}
+
 const FOOTER = 'footer, [role="contentinfo"]';
+
+/** What a menu's entries are. */
+export const MENU_ENTRY = '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"], [role="radio"]';
 
 /** Moves closer together than this are a held key (or a very quick thumb). */
 const RAPID_MS = 220;
@@ -252,14 +304,19 @@ export class SpatialNavigator {
     const scope = this.opts.scope?.() ?? null;
     const skip = this.skipSelector();
     const seen = new Set<Element>();
-    for (const el of (scope ?? this.doc).querySelectorAll(selector)) {
-      if (this.opts.ignoreWithin && el.closest(this.opts.ignoreWithin)) continue;
+    const faded = new Map<Element, boolean>();
+    for (const el of deepQueryAll(scope ?? this.doc, selector)) {
+      if (this.opts.ignoreWithin && deepClosest(el, this.opts.ignoreWithin)) continue;
       if (skip && el.matches(skip)) continue;
       if (near) {
         const r = el.getBoundingClientRect();
         if (r.bottom < above || r.top > below) continue;
       }
-      if (!isVisible(el, view)) continue;
+      if (!isVisible(el, view, faded)) continue;
+      // Too small to aim at or to see a ring on from a couch (a carousel's
+      // row of dots, six to nine pixels high on Steamboat's service).
+      const size = el.getBoundingClientRect();
+      if (Math.min(size.width, size.height) < 10) continue;
       seen.add(el);
     }
     // A label tied to a toggle by `for` stands in for it only when the toggle
@@ -285,7 +342,8 @@ export class SpatialNavigator {
     }
     // Drop wrappers that contain another candidate, so a card and the link
     // inside it do not both receive focus.
-    const inner = [...seen].filter((el) => ![...seen].some((other) => other !== el && el.contains(other)));
+    const list = [...seen];
+    const inner = list.filter((el) => !list.some((other) => other !== el && deepContains(el, other)));
     // Drop backdrops too: a link stretched over a whole banner, with the
     // banner's real buttons lying on top of it. Seen on the live site, where
     // such a link swallowed sideways movement.
@@ -302,7 +360,8 @@ export class SpatialNavigator {
       const held = bySpot.get(spot);
       if (!held || rank(el) > rank(held)) bySpot.set(spot, el);
     }
-    return front.filter((el) => [...bySpot.values()].includes(el));
+    const kept = new Set(bySpot.values());
+    return front.filter((el) => kept.has(el));
   }
 
   private skipSelector(): string | null {
@@ -352,12 +411,48 @@ export class SpatialNavigator {
     const cache = new Map<Element, boolean>();
     const flowing = onScreen.filter((el) => !isPinned(el, view, cache));
     const pool = flowing.length || !allowPinned ? flowing : onScreen;
-    return this.focus(pool[pickInitial(pool.map(toRect))] ?? null);
+    // Not a small icon when there is anything else. Seen on Steamboat's service: a
+    // banner's mute button sits above and to the right of its main button,
+    // and reading order alone put the first press on it.
+    const icon = Math.max(view.innerHeight * 0.12, 48);
+    const main = pool.filter((el) => {
+      const r = el.getBoundingClientRect();
+      // An icon is small and about square; a short text link is not one.
+      return r.width > icon || r.height > icon || r.width >= r.height * 1.5;
+    });
+    const pick = main.length ? main : pool;
+    return this.focus(pick[pickInitial(pick.map(toRect))] ?? null);
+  }
+
+  /**
+   * Focuses what a page is about: its first control in reading order that is
+   * not in a pinned bar and not a small icon, on screen if there is one,
+   * otherwise the first below. Seen on Steamboat's service: at the TV scale the
+   * banner's buttons start just below the screen and only its mute icon is
+   * on it.
+   */
+  private focusFirstContent(all: readonly Element[]): boolean {
+    const view = this.doc.defaultView;
+    if (!view) return false;
+    const cache = new Map<Element, boolean>();
+    const icon = Math.max(view.innerHeight * 0.12, 48);
+    const main = all.filter((el) => {
+      if (isPinned(el, view, cache)) return false;
+      const r = el.getBoundingClientRect();
+      return r.top >= 0 && (r.width > icon || r.height > icon || r.width >= r.height * 1.5);
+    });
+    const onScreen = main.filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.bottom <= view.innerHeight && r.left >= 0 && r.right <= view.innerWidth;
+    });
+    const pick = onScreen.length ? onScreen : main;
+    if (pick.length) return this.focus(pick[pickInitial(pick.map(toRect))] ?? null);
+    return this.focusFirstOnScreen(false);
   }
 
   /** Focuses the first candidate inside `container`, reading order. */
   focusFirstIn(container: Element): boolean {
-    const inside = this.candidates().filter((el) => container.contains(el));
+    const inside = this.candidates().filter((el) => deepContains(container, el));
     return this.focus(inside[pickInitial(inside.map(toRect))] ?? null);
   }
 
@@ -374,8 +469,13 @@ export class SpatialNavigator {
 
   /** One attempt at a move among `all`. Null when nothing lies in that direction. */
   private step(dir: Direction, all: Element[]): boolean | null {
-    const from = this.focused;
     const view = this.doc.defaultView;
+    // What had focus may have been put away without being removed (an entry
+    // of a menu that has closed). It is then nowhere, and moving "from" it
+    // lands somewhere arbitrary; carry on as if nothing had focus.
+    const held = this.focused;
+    if (held && view && !isLaidOut(held, view)) this.clear();
+    const from = this.focused;
     if (!from) {
       // Focus was lost part-way down a page (what had it was replaced as
       // more of the page loaded): carry on from what is on screen, not from the top.
@@ -387,6 +487,10 @@ export class SpatialNavigator {
         }
         return true;
       }
+      // Nothing has focus yet on this page. The first press goes to what the
+      // page is about (its main button, its first card), not to the bar
+      // pinned across the top; Up, which points at the bar, still gets it.
+      if (dir !== 'up' && this.focusFirstContent(all)) return true;
       const i = pickInitial(all.map(toRect));
       return this.focus(all[i] ?? null);
     }
@@ -401,6 +505,25 @@ export class SpatialNavigator {
         const flowing = others.filter((el) => !isPinned(el, view, cache));
         if (pickNext(toRect(from), flowing.map(toRect), dir) !== -1) others = flowing;
       }
+    }
+    // Left and right stay in the page too. A pinned strip of tabs lies across
+    // whatever row has scrolled under it, and would be "in the row". From a
+    // sideways-scrolling row it is never a target (the row's own edge handling
+    // takes over); elsewhere only when no page content lies that way.
+    if (view && (dir === 'left' || dir === 'right')) {
+      const cache = new Map<Element, boolean>();
+      if (!isPinned(from, view, cache)) {
+        const flowing = others.filter((el) => !isPinned(el, view, cache));
+        if (rowOf(from, view) || pickNext(toRect(from), flowing.map(toRect), dir) !== -1) others = flowing;
+      }
+    }
+    // Up and down inside a menu stay in the menu while it has an entry that
+    // way. Seen on Steamboat's service: the player's menus lie over its control
+    // row, and the row's buttons were nearer than the next entry.
+    if ((dir === 'up' || dir === 'down') && from.matches(MENU_ENTRY)) {
+      const home = from.getRootNode();
+      const peers = others.filter((el) => el.getRootNode() === home && el.matches(MENU_ENTRY));
+      if (pickNext(toRect(from), peers.map(toRect), dir) !== -1) others = peers;
     }
     const i = pickNext(toRect(from), others.map(toRect), dir);
     if (i === -1) return null;
@@ -435,7 +558,7 @@ export class SpatialNavigator {
     if (!view) return target;
     const row = rowOf(target, view);
     if (!row || row === rowOf(from, view)) return target;
-    const inRow = candidates.filter((el) => row.contains(el));
+    const inRow = candidates.filter((el) => deepContains(row, el));
     const remembered = this.rowMemory.get(row);
     if (remembered && inRow.includes(remembered)) return remembered;
     const rowLeft = row.getBoundingClientRect().left;
@@ -488,6 +611,7 @@ export class SpatialNavigator {
     if (view && bottom <= view.innerHeight) {
       // Only this: a second scroll request would replace it and stop short of the top.
       view.scrollTo({ top: 0, behavior: this.rapid ? 'instant' : 'smooth' });
+      scrollWithinList(el, view);
     } else {
       // With a key held, a smooth scroll is restarted by every repeat and never arrives.
       el.scrollIntoView({ block: 'center', inline: 'center', behavior: this.rapid ? 'instant' : 'smooth' });

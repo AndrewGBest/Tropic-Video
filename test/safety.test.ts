@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { installPurchaseGuard, isSpendControl, looksLikeSpendUrl } from '../src/layer/guard/purchase-guard';
 import { buildOutline, maskIdentifier, sanitizeUrl } from '../src/layer/diagnostics/outline';
-import { parseAdapter } from '../src/layer/adapter/adapter';
+import { adapterReport, chooseAdapter, parseAdapter } from '../src/layer/adapter/adapter';
 import { browserUserAgent, isAllowedUrl } from '../src/main/hosts';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,6 +22,10 @@ describe('purchase guard', () => {
     '<button><span id="t">Subscribe</span></button>',
     '<div role="button" id="t" aria-label="Pre-order now"></div>',
     '<a id="t" href="/gp/buy/spc/handlers/display.html">Continue</a>',
+    '<button id="t">Log Out</button>',
+    '<button id="t">Edit Profiles</button>',
+    '<button id="t">Account</button>',
+    '<a id="t" href="/x">Cancel subscription</a>',
     '<input id="t" type="submit" value="Place your order">',
     '<form action="/checkout/confirm"><button id="t">Continue</button></form>',
   ])('blocks %s', (markup) => {
@@ -35,6 +39,8 @@ describe('purchase guard', () => {
     '<a id="t" href="/detail/abc">More details</a>',
     '<button id="t">Add to Watchlist</button>',
     '<button id="t">Subtitles</button>',
+    '<button id="t">Help</button>',
+    '<button id="t">Log in</button>',
   ])('allows %s', (markup) => {
     html(markup);
     expect(isSpendControl(document.getElementById('t')!)).toBe(false);
@@ -203,5 +209,32 @@ describe('about panel', () => {
   it('shows the version when it has one', () => {
     expect(aboutTitle('0.0.1')).toBe('Tropic Video 0.0.1');
     expect(aboutTitle(undefined)).toBe('Tropic Video');
+  });
+});
+
+describe('choosing between the built-in adapter and a user file', () => {
+  const bundled = { schema: 1, id: 'site', revision: 3, verified: true, selectors: { rowNext: ['.next'] } };
+  it('uses the built-in one when there is no file', () => {
+    expect(chooseAdapter(bundled, null).source).toBe('bundled');
+  });
+  it('uses a newer file for the same site', () => {
+    const newer = { ...bundled, revision: 4 };
+    expect(chooseAdapter(bundled, newer)).toEqual({ raw: newer, source: 'user' });
+  });
+  it('ignores an older or equal file, another site, or something that is not an adapter, and says why', () => {
+    for (const file of [{ ...bundled, revision: 3 }, { ...bundled, revision: 2 }, { ...bundled, id: 'other', revision: 9 }, { revision: 9 }, 'text', 7]) {
+      const choice = chooseAdapter(bundled, file);
+      expect(choice.source).toBe('bundled');
+      expect(choice.raw).toBe(bundled);
+      expect(choice.note).toMatch(/ignored/);
+    }
+  });
+});
+
+describe('adapterReport', () => {
+  it('counts what each list matches, so a renamed control shows as zero', () => {
+    document.body.innerHTML = '<button class="next"></button><button class="next"></button>';
+    const adapter = parseAdapter({ schema: 1, id: 'site', revision: 3, selectors: { rowNext: ['.next'], rowPrev: ['.gone'], searchOpen: ['>>bad'] } });
+    expect(adapterReport(adapter, document)).toBe('adapter site revision 3: searchOpen=0 rowPrev=0 rowNext=2');
   });
 });
