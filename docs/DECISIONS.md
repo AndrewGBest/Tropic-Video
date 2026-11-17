@@ -402,3 +402,63 @@ never reports focus returning, the first key press in the window unmutes.
 **Reopen if:** the minimise misfires on some desktop (make it a config
 option), or the site stops pausing on Space.
 
+
+## 2026-11-17: Shared-code changes brought over from Steamboat
+
+Steamboat (github.com/AndrewGBest/Steamboat) is this app for a second
+service, begun as a copy of v0.1.1. A day of work on its live site and a
+review of the whole code produced changes to the parts the two share. Andrew
+asked for those that make sense here to be ported, and not the rest.
+
+**Brought over:**
+
+- *Idle load.* The focus ring is no longer measured and redrawn on every
+  frame; game controllers are read only while one is connected; the player's
+  timers do nothing while the window is hidden. A move looks up ancestor
+  styles once. (Measured in Steamboat, still on a page, in the VM: about
+  9.4% of one core before, 5.3% after. Not measured again here.)
+- *Navigation.* Open shadow roots are followed; a pinned bar no longer
+  catches sideways moves from a scrolling row; the first press on a page goes
+  to its content, not the top bar, and not to a small icon; controls under
+  ten pixels are not targets; focus on a control that has been put away
+  counts as none; Up and Down stay inside a menu; a menu opened from a player
+  control takes focus, and a list that scrolls by itself follows its focused
+  entry; Left and Right on a focused progress bar are sent as the seek keys;
+  a second look after a carousel turns.
+- *On-screen keyboard.* It moves to the top of the screen when it would
+  cover the field being typed into.
+- *Back.* A player that is a page of its own is left by going back a page
+  (this service's player is laid over its page, so nothing changes here);
+  one more step back when a page kept two history entries for itself.
+- *Shell.* A plain-http address on an allowed host is loaded as https; only
+  the window's own redirects are checked against the allowlist, not those of
+  frames inside the page (Hard rule 4); a refused link's message is shown at
+  most once in five seconds, and shows the scheme when that is the reason.
+- *Resilience.* A newer `adapter.json` in the data folder replaces the
+  built-in adapter (never downloaded); a saved outline's second line counts
+  what each selector still matches; the automation guard also knows account
+  words (log out, account, edit profiles); the search key falls back to a
+  link whose address says search.
+- *Setting.* `"hardwareDecode": true`, opt-in and untried on real hardware.
+- The live walk tool tells look-alike cards apart and sees into shadow roots.
+
+**Not brought over, and why:**
+
+- *The Electron 42 pin.* Steamboat needs it because castLabs 43 and later
+  claim E-AC-3 audio on Linux without a decoder, and its service then sends
+  that. This service has played on 44 on both setups tried and was seen
+  playing again after the port. The end-to-end check that enforces the pin
+  would fail here by design, so it was left out too. **Watch for:** a title
+  that will not start with an audio decoder error in the terminal; then pin.
+- Steamboat's allowlist, adapter, outlines, notice, and its plan and bundle
+  guard words: all about its service.
+
+**Checked here after the port:** 217 unit tests, the rule check, the
+end-to-end run; and on this service's live site under `--automation`: home
+(first Down on the banner's play button, six rows down, along a row, back
+up), a title page, playback from its play button, the player's controls
+shown and walked, Back to the controls then out of the player onto the title
+page, and the search key with one letter from the on-screen keyboard.
+**Not checked here:** the keyboard's new position on the sign-in page, the
+menus' new behaviour (no menu was opened), a controller, hardware decode,
+the packaged builds. Nothing is released; the version is still 0.1.1.

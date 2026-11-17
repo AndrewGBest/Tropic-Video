@@ -52,7 +52,12 @@ mapping function that takes the current mode:
 - `navigator.ts` gathers visible, enabled controls, drops wrappers that contain
   another candidate, and focuses with a `data-tropic-focus` attribute plus real DOM focus.
 - The focus ring is drawn by the overlay over the element's rectangle, so it
-  does not depend on the site's styles.
+  does not depend on the site's styles. It is followed frame by frame only
+  while it or the page is moving, then looked at twice a second.
+- `deep.ts` lets navigation see through open shadow roots. This service does
+  not need it today; Steamboat's does, and the two apps share this code.
+- A move gathers its candidates afresh: nothing is cached between key
+  presses. Within one move, ancestor styles are looked up once.
 
 ## Site adapter (`adapters/primevideo.json`)
 

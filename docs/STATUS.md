@@ -2,6 +2,24 @@
 
 Update this at the end of every working session.
 
+## 2026-11-17: shared-code changes ported from Steamboat (not released)
+
+Andrew asked for what makes sense to be ported from Steamboat. The list, what
+was left out and why, and what was checked are in `DECISIONS.md` (entry of
+this date). In short: the app rests when nothing moves, navigation gained a
+dozen rules found on Steamboat's service, the on-screen keyboard keeps off
+its field, and a site change can be patched with an `adapter.json` file.
+
+| Claim | Evidence |
+|---|---|
+| Checks pass | 217 unit tests, rule check, end-to-end (all ok) |
+| Browsing, playback, player controls, Back and search still work on the live site | driven under `--automation` in the VM, focus and player state read after each key |
+| The first Down on the home page lands on the banner's play button, not the top bar | same run. (On a title page it lands on the channel link above the buttons; Play is two presses on) |
+
+**Not verified:** everything listed as not checked in that entry; and how
+the focus ring's new following looks on the TV box. **Not released:** these
+changes are on `main` only. v0.1.1 is still the build on the TV box.
+
 ## 2026-11-17: README wording on quality and on how the app is made
 
 Andrew reports he has been getting HD playback. **Not measured by the agent**:

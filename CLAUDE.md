@@ -75,6 +75,13 @@ Passing it is necessary, not sufficient.
 - **Fixtures are invented.** Pages in `test/fixtures/` are made-up layouts.
   Outlines captured from the live site may be committed only after checking
   they contain no titles, names or IDs (the sanitiser has tests; still look).
+- **Idle means idle.** No loop that runs every frame, and no timer that does
+  work while nothing changes or the window is hidden. Measure before and
+  after with the app sitting still on a page.
+- **Steamboat shares this code.** github.com/AndrewGBest/Steamboat is the
+  same app for another service and began as a copy of this one. A fix to the
+  shared parts (navigation, input, keyboard, overlay, shell) usually belongs
+  in both; say so in `docs/STATUS.md`.
 - **Small dependencies.** Adding a runtime dependency needs a line in
   `docs/DECISIONS.md` saying why. Dev dependencies should stay few.
 - **Record decisions.** Any choice that a future session might re-argue goes in

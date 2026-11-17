@@ -131,6 +131,37 @@ Mistakes in the file are reported in the terminal and ignored.
 browser's standard layout (0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 8 Select, 9 Start,
 10 and 11 the stick clicks, 12 to 15 the D-pad).
 
+## Going easy on a small box
+
+- **Background video.** The busiest thing on screen while you browse is the
+  service's own preview that plays behind its pages. If your profile's
+  settings on the service offer a switch for background video or autoplay,
+  turning it off is the biggest saving. The app does not block it: it leaves
+  the service's behaviour alone.
+- **Hardware decoding.** Add `"hardwareDecode": true` to `config.json` to ask
+  the browser to decode video on the graphics chip (VA-API). Chromium does
+  not promise this works on Linux, and it has **not been tried** for this app
+  on real hardware. The terminal says what you got at start
+  (`video decode: enabled` or `disabled_software`). If playback misbehaves
+  with it on, take it out again.
+- The app itself rests when nothing moves: the focus ring is only followed
+  while it or the page is moving, and game controllers are only read while
+  one is connected.
+
+## When the service changes its pages
+
+The app finds most things on a page by general rules, and a few by name, from
+a small data file (`adapters/primevideo.json`). When the service renames
+those, everything still works but less smoothly (a row's scroll arrows may
+take focus; a background trailer may be taken for the player). To fix that without waiting
+for a new build, save a newer copy of that file from this repository as
+`adapter.json` in the app's data folder (the one `config.json` lives in) and
+restart. A file that is older than the build's own, or for another site, is
+ignored, and the terminal says so. The app never downloads this file itself.
+
+When reporting a problem, press Ctrl+Shift+D on the page: the outline's
+second line shows how much of the data file still matches.
+
 ## Your account
 
 Using any unofficial client is at your own risk. The service decides which
